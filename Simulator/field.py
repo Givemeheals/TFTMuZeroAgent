@@ -217,9 +217,19 @@ def enemies_in_distance(champion, target_y, target_x, radius):
                     c[i][j].champion and
                     distance({'y': j, 'x': i}, {'y': target_y, 'x': target_x}, False) <= radius):
                 enemies_within.append(c[i][j])
-
     return enemies_within
 
+def allies_in_distance(champion, target_y, target_x, radius):
+    allies_within = []
+    c = coordinates
+    for i, line in enumerate(c):
+        for j, col in enumerate(line):
+            if (c[i][j] and
+                    c[i][j].team == champion.team and
+                    c[i][j].champion and
+                    distance({'y': j, 'x': i}, {'y': target_y, 'x': target_x}, False) <= radius):
+                allies_within.append(c[i][j])
+    return allies_within
 
 # find hexes that are within a certain distance
 def hexes_in_distance(target_y, target_x, radius, allow_outside_map=False):
@@ -242,7 +252,6 @@ def hexes_distance_away(target_y, target_x, radius, allow_outside_map=False):
             if allow_outside_map or (i >= 0 and i <= 7 and j >= 0 and j <= 6):
                 if distance({'y': i, 'x': j}, {'y': target_y, 'x': target_x}, False) == radius:
                     hexes_within.append([i, j])
-
     return hexes_within
 
 

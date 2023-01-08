@@ -146,7 +146,6 @@ def total_origin_class(blue_champion, red_champion):
     for t in traits:
         if t in origin_class_stats.initiate_traits:
             eval(t)(blue_team, red_team)  # origin_class_stats.py: initiate_traits
-
     calculate_cultist_stars(blue_team, red_team)
 
 

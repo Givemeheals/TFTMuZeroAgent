@@ -8,12 +8,13 @@ import random
 from math import ceil
 from Simulator.stats import AD, HEALTH, ARMOR, MR, AS, RANGE, MANA, MAXMANA, COST, MANALOCK, ABILITY_REQUIRES_TARGET, \
     DODGE, INITIATIVE_ACTIVE, ABILITY_LENGTH, DAMAGE_PER_UNIT
+from Simulator.augment_functions import start_of_battle_augments
 from Simulator.champion_functions import attack, die, MILLIS, MILLISECONDS_INCREASE, add_damage_dealt
 from Simulator import ability, active, field, item_stats, items
 
+
 que = []
 log = []
-
 
 def printt(msg):
     if config.PRINTMESSAGES:
@@ -29,7 +30,7 @@ test_multiple = {'blue': 0, 'red': 0, 'bugged out': 0, 'draw': 0}
 
 class champion:
     def __init__(self, name, team=None, y=-1, x=-1, stars=1, itemlist=None, overlord=None,
-                 sandguard_overlord_coordinates=None, chosen=False, kayn_form=None):
+                 sandguard_overlord_coordinates=None, chosen=False, kayn_form=None, augments=[]):
 
         if itemlist is None:
             itemlist = []
@@ -67,6 +68,8 @@ class champion:
         self.mana_generation = 1  # enlightened - trait
         self.castMS = -50000  # the timestamp of the last cast
         self.ability_requires_target = ABILITY_REQUIRES_TARGET[name]
+        self.mana_per_second = 0
+        self.mps_increased = 0
 
         self.target = None
         self.target_y = None
@@ -134,6 +137,8 @@ class champion:
 
         self.kayn_form = kayn_form
 
+        self.big_friend = 1
+
         if chosen: 
             self.health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.max_health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
@@ -142,6 +147,8 @@ class champion:
             # self.cost = cost_star_values[COST[name]][self.stars]
             self.health += 200 
             self.max_health += 200
+
+        self.augments = augments
 
         if name != 'aphelios_turret':
             items.initiate(self)
@@ -245,7 +252,7 @@ class champion:
             # the above one is already such a mess. just do another statement (mess) here
             # it's long as shit but gets the job done
             if crit_random < self.crit_chance and self != target and not 'bramble_vest' in target.items \
-                    and not item_damage and crit_string == '' and origin_class.is_trait(self, 'assassin') \
+                    and not item_damage and crit_string == '' and 'assassin' in self.origin \
                     and origin_class.get_origin_class_tier(self.team, 'assassin') > 0:
                 damage *= self.crit_damage
                 crit_string = 'crit'
@@ -294,7 +301,8 @@ class champion:
                            '{:<5}--> {:<8}   shield {:<5}--> {:<5} {}{}{}{}'.
                            format(ceil(target.health), ceil(target.health - damage), ceil(shield_old),
                                   ceil(target.shield_amount()), crit_string, burn_string, item_string, trait_string))
-                target.health -= damage
+
+                target.health -= damage * target.big_friend
                 if MILLIS() > target.castMS + target.manalock and not target.ability_active  and target.maxmana > 0:
                     if not target.name == 'riven' or ability.riven_helper(target, {}):
                         old_mana = target.mana
@@ -315,7 +323,7 @@ class champion:
                     origin_class.the_boss(target)
 
                 if target.health <= 0:
-                    target.die()
+                    target.die(self)
                 else:
                     origin_class.divine(self, target, False)  # divine -trait
 
@@ -343,8 +351,8 @@ class champion:
             items.frozen_heart(self)  # frozen_heart - item
             items.ionic_spark(self)  # ionic_spark - item
 
-    def die(self):
-        die(self)
+    def die(self, killer):
+        die(self, killer)
         
         items.redemption(self)  # redemption - item
         items.frozen_heart(self)  # frozen_heart - item
@@ -530,7 +538,7 @@ def run(champion_q, player_1, player_2, round_damage=0):
                                          int(player_1.board[x][y].overlord_coordinates[1])]
                 blue.append(champion_q(player_1.board[x][y].name, 'blue', y, x, player_1.board[x][y].stars,
                                        player_1.board[x][y].items, False, daddy_coordinates, player_1.board[x][y].chosen
-                                       , player_1.board[x][y].kayn_form))
+                                       , player_1.board[x][y].kayn_form, player_1.board[x][y].augments))
             if player_2.board[x][y]:
                 daddy_coordinates = False
                 if player_2.board[x][y].name == 'sandguard':
@@ -539,7 +547,7 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 # Inverting because the combat system uses the whole board and does not mirror at start.
                 red.append(champion_q(player_2.board[x][y].name, 'red', 7 - y, 6 - x, player_2.board[x][y].stars,
                                       player_2.board[x][y].items, False, daddy_coordinates, player_2.board[x][y].chosen,
-                                      player_2.board[x][y].kayn_form))
+                                      player_2.board[x][y].kayn_form, player_2.board[x][y].augments))
 
     if len(blue) == 0 or len(red) == 0:
         if len(red) == 0 and len(blue) == 0:
@@ -567,8 +575,13 @@ def run(champion_q, player_1, player_2, round_damage=0):
     items.zzrot_portal(blue[0])  # zzrot_portal
     items.zephyr(blue[0])  # zephyr
 
-    origin_class.total_health(blue, red)
     origin_class.total_origin_class(blue[0], red[0])  # count and execute some traits
+
+    start_of_battle_augments(blue)
+    start_of_battle_augments(red)
+
+    origin_class.total_health(blue, red)
+
     # Not sure what changed the length of one of these arrays at this point but this seems to fix the issue
     if len(blue) == 0 or len(red) == 0:
         return 0, round_damage
@@ -576,6 +589,7 @@ def run(champion_q, player_1, player_2, round_damage=0):
     # There appears to be some issue with infinity edge
     # infinity_edge made sure that the crit damage bonus gets registered after everything else has gone through
 
+    seconds_in = 0
     while True:
         if MILLIS() > 150000:
             test_multiple['bugged out'] += 1
@@ -588,11 +602,14 @@ def run(champion_q, player_1, player_2, round_damage=0):
         if MILLIS() > 0 and MILLIS() % \
                 origin_class_stats.threshold['hunter'][origin_class.get_origin_class_tier('red', 'hunter')] == 0:
             origin_class.hunter(red)  # hunter -trait
+
         for b in blue:
             field.action(b)
 
         for o in red:
             field.action(o)
+
+
         
         while len(que) > 0 and MILLIS() > que[0][2]:
             champion_q = que[0][1]
@@ -605,7 +622,6 @@ def run(champion_q, player_1, player_2, round_damage=0):
                     or (champion_q.name == 'morgana' and champion_q.health <= 0 and que[0][3] and
                         'coordinates' in que[0][3][1]) or \
                     (champion_q.name == 'ahri' and champion_q.health <= 0 and que[0][3] and 'y' in que[0][3][1]):
-
                 if que[0][0] == 'clear_idle':
                     champion_q.idle = True
                     champion_q.print(' cleared idle     ')
@@ -643,7 +659,8 @@ def run(champion_q, player_1, player_2, round_damage=0):
                     champion_q.spell(que[0][5], 0, que[0][5].max_health * config.BURN_DMG_PER_SLICE, True, True)
 
                 if que[0][0] == 'kill':
-                    que[0][5].die()
+                    que[0][5].die(None)
+
 
             que.pop(0)
 
@@ -738,8 +755,6 @@ def change_stat(a_champion, action, length, function, stat, value, data):
                         start_value = [[a_champion.will_revive[0][0].name], [a_champion.will_revive[1][0]]]
 
                     if end_value != start_value:
-                        if isinstance(start_value, float):
-                            start_value = round(start_value, 3)
                         if isinstance(end_value, float):
                             end_value = round(end_value, 3)
                         a_champion.print(' {} {} --> {}'.format(stat, start_value, end_value))
@@ -812,3 +827,5 @@ def survive_combat(player, champ_list):
     for champ in champ_list:
         if player.board[champ.starting_x][champ.starting_y]:
             player.board[champ.starting_x][champ.starting_y].survive_combat = True
+
+

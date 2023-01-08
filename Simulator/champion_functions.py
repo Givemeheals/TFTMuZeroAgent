@@ -3,8 +3,9 @@ import Simulator.origin_class_stats as origin_class_stats
 import Simulator.stats as stats
 import random
 import config
+import math
 from math import ceil
-from Simulator import ability, active, field, item_stats, items
+from Simulator import ability, active, field, item_stats, items, augment_functions
 from Simulator.stats import *
 
 MILLISECONDS = 0
@@ -149,6 +150,10 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
 
         crit_string = ''  # bramble vest -item
         if crit_random < champion.crit_chance and 'bramble_vest' not in target.items:
+            if target.augments:
+                for x in range(len(target.augments)):
+                    if target.augments[x][0] == 'electrocharge':
+                        augment_functions.electrocharge(target.augments[x][1], champion.team)
             damage *= champion.crit_damage
             crit_string = ' crit'
 
@@ -224,7 +229,7 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
                     origin_class.duelist_helper(champion)  # duelist -trait
 
                     if target.health <= 0:
-                        target.die()
+                        target.die(champion)
                     elif not item_attack:
                         origin_class.divine(champion, target, True)  # divine -trait
 
@@ -273,9 +278,10 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
             champion.clear_que_idle()
             champion.add_que('clear_idle', 1 / champion.AS * 1000)
             origin_class.shade_helper(champion)
+    # print(champion.name, round(champion.health, 1), '       ', target.name, round(target.health, 1))
 
 
-def die(champion):
+def die(champion, killer):
     enemy_team = champion.enemy_team()
     # mark everyone's target to be 'None' who targeted this champion
     for c in enemy_team:
@@ -288,6 +294,7 @@ def die(champion):
         # Ran into a bug with this being removed. I'll look into where own_team is defined later
         if champion in champion.own_team():
             champion.own_team().remove(champion)
+        kill_functions(killer)
         champion.print(' dies ')
 
         # zzrot_portal
@@ -351,3 +358,9 @@ def die(champion):
         champion.add_que('change_stat', revive_delay, None, 'damage_reduction', 0)
         champion.add_que('change_stat', revive_delay, None, 'idle', True)
         champion.add_que('change_stat', revive_delay, None, 'champion', True)
+
+def kill_functions(champion):
+    if champion and len(champion.augments) > 0:
+        for x in range(0, len(champion.augments)):
+            if 'thrill_of_the_hunt' == champion.augments[x][0]:
+                champion.add_que('heal', -1, None, None, champion.augments[x][1])

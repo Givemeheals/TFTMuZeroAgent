@@ -74,7 +74,6 @@ def bramble_vest(champion):
 def chalice_of_power(champion):
     units = champion.own_team() + champion.enemy_team()
     holders = list(filter(lambda x: 'chalice_of_power' in x.items, units))
-
     coords = field.coordinates
     for holder in holders:
         item_amount = len(list(filter(lambda x: x == 'chalice_of_power', holder.items)))
@@ -85,15 +84,15 @@ def chalice_of_power(champion):
         if(holder.x <= 5): hexes.append(coords[holder.y][holder.x + 1])
     
         for h in hexes:
-            if(h and h.team == champion.team and h.champion):
+            if h and h.team == champion.team and h.champion:
                 change_stat(h, 'SP', h.SP + item_stats.SP['chalice_of_power'] * item_amount)
 
 
-#adding stack whenever dealing damage to a target
-#at the same time checking if any of the old stacked enemies are dead. if so, add x AD
+# adding stack whenever dealing damage to a target
+# at the same time checking if any of the old stacked enemies are dead. if so, add x AD
 deathblade_list = []
 def deathblade(champion, target):
-    if('deathblade' in champion.items):
+    if 'deathblade' in champion.items:
         item_amount = len(list(filter(lambda x: x == 'deathblade', champion.items)))
 
         old_list = list(filter(lambda x: x[0] == champion, deathblade_list))

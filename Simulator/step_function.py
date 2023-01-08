@@ -26,7 +26,7 @@ class Step_Function:
     def batch_2d_controller(self, actions, players, game_observations):
         rewards = []
         for i in range(config.NUM_PLAYERS):
-            if players[i]:
+            if players[i] and not players[i].afk:
                 # Buy a shop unit
                 if actions[players[i].player_num][0] == 0:
                     if actions[players[i].player_num][1] == 0:

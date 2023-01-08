@@ -11,7 +11,7 @@ origin_class = {
     'elise': ['cultist', 'keeper'],
     'evelynn': ['cultist', 'shade'],
     'ezreal': ['elderwood', 'dazzler'],
-    "fiora": ['enlightened', 'duelist'],
+    'fiora': ['enlightened', 'duelist'],
     'garen': ['warlord', 'vanguard'], 
     'hecarim': ['elderwood', 'vanguard'],
     'irelia': ['enlightened', 'divine', 'adept'],

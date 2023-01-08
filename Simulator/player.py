@@ -9,6 +9,7 @@ from Simulator.item_stats import items as item_list, basic_items, item_builds, t
 from Simulator.stats import COST
 from Simulator.pool_stats import cost_star_values
 from Simulator.origin_class_stats import tiers, fortune_returns
+from Simulator.augment_functions import augment_choice
 from math import floor
 
 
@@ -118,6 +119,10 @@ class player:
         self.action_complete = False
         self.action_values = []
 
+        self.augments = []
+        self.afk = False
+        self.afk_turn_count = 0
+
     # Return value for use of pool.
     # Also I want to treat buying a unit with a full bench as the same as buying and immediately selling it
     def add_to_bench(self, a_champion):  # add champion to reduce confusion over champion from import
@@ -150,6 +155,16 @@ class player:
         bench_loc = self.item_bench_vacancy()
         self.item_bench[bench_loc] = item
         self.generate_item_vector()
+
+    def augment_functions(self):
+        if self.augments[-1] == 'afk':
+            self.afk = True
+        if self.augments[-1] == 'band_of_thieves':
+            if not self.item_bench_full(self.augments[-1][1]):
+                for i in range(self.augments[-1][1] - 1):
+                    self.item_bench[self.item_bench_vacancy()]
+
+
 
     def bench_full(self):
         for u in self.bench:
@@ -196,6 +211,16 @@ class player:
         self.level_up()
         self.generate_player_vector()
         return True
+
+    def decide_augment(self):
+        options = augment_choice()
+        new_augment = options[0]
+        self.augments.append(new_augment)
+        for x in range(6):
+            for y in range(3):
+                if self.board[x][y]:
+                    self.board[x][y].augments.append(new_augment)
+        self.augment_functions()
 
     def decide_vector_generation(self, x):
         if x:
@@ -537,9 +562,7 @@ class player:
                 # tracking thiefs gloves location
                 if len(m_champion.items) > 0:
                     if m_champion.items[0] == 'thiefs_gloves':
-                        for x, loc in enumerate(self.thiefs_glove_loc):
-                            if loc == [bench_x, -1]:
-                                self.thiefs_glove_loc[x] = [board_x][board_y]
+                        self.thiefs_gloves_loc_update(bench_x, -1, board_x, board_y)
                 if m_champion.name == 'azir':
                     # There should never be a situation where the board is too fill to fit the sandguards.
                     sand_coords = self.find_azir_sandguards(board_x, board_y)
@@ -587,6 +610,7 @@ class player:
                     self.bench[bench_loc].x = bench_loc
                     self.bench[bench_loc].y = -1
                     self.num_units_in_play -= 1
+                    self.thiefs_gloves_loc_update(x, y, bench_loc, -1)
                     self.generate_bench_vector()
                     self.generate_board_vector()
                     self.update_team_tiers()
@@ -606,6 +630,7 @@ class player:
                 self.board[x2][y2].y = y2
                 self.print("moved {} and {} from board [{}, {}] to board [{}, {}]"
                            .format(self.board[x1][y1].name, self.board[x2][y2].name, x1, y1, x2, y2))
+                self.thiefs_gloves_loc_update(x1, y1, x2, y2)
                 self.generate_board_vector()
                 return True
             elif self.board[x1][y1]:
@@ -614,6 +639,7 @@ class player:
                 self.board[x2][y2].x = x2
                 self.board[x2][y2].y = y2
                 self.print("moved {} from board [{}, {}] to board [{}, {}]".format(self.board[x2][y2].name, x1, y1, x2, y2))
+                self.thiefs_gloves_loc_update(x1, y1, x2, y2)
                 self.generate_board_vector()
                 return True
         self.reward += self.mistake_reward
@@ -972,6 +998,14 @@ class player:
         else:
             return False
 
+    def thiefs_gloves_loc_update(self, x1, y1, x2, y2):
+        if [x1, y1] in self.thiefs_glove_loc:
+            self.thiefs_glove_loc.remove([x1, y1])
+            self.thiefs_glove_loc.append([x2, y2])
+        elif[x2, y2] in self.thiefs_glove_loc:
+            self.thiefs_glove_loc.remove([x2, y2])
+            self.thiefs_glove_loc.append([x1, y1])
+
 
     def transform_kayn(self, kayn_item):
         self.kayn_form = kayn_item
@@ -1065,6 +1099,8 @@ class player:
         self.round = t_round
         self.reward += self.num_units_in_play * self.minion_count_reward
         # self.print(str(self.num_units_in_play * self.minion_count_reward) + " reward for minions in play")
+        if self.round == 3 or self.round == 10 or self.round == 16:
+            self.decide_augment()
         self.gold_income(self.round)
         self.printComp()
         self.printBench()
@@ -1075,6 +1111,11 @@ class player:
             self.kayn_transform()
         for x in range(len(self.thiefs_glove_loc)):
             self.thiefs_gloves(self.thiefs_glove_loc[x][0], self.thiefs_glove_loc[x][1])
+        if self.afk:
+            self.afk_turn_count += 1
+            if self.afk_turn_count == 3:
+                self.afk = False
+                self.gold += 30
 
     def won_game(self):
         self.reward += self.won_game_reward
