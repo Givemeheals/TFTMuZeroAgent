@@ -3,7 +3,6 @@ from Simulator.pool import pool
 from Simulator.champion import champion
 from Simulator import champion as c_object
 from Simulator.item_stats import trait_items, starting_items
-from Simulator.field import distance
 
 
 def setup(player_num=0) -> player:
@@ -105,7 +104,7 @@ def reforgerTest():
     for x in range(3):
         p1.add_to_item_bench('reforger')
     p1.buy_champion(champion('leesin'))
-    p1.buy_champion(champion('nami'))
+    p1.buy_champion(champion('jax'))
     p1.buy_champion(champion('nami'))
     p1.add_to_item_bench('sunfire_cape')
     p1.add_to_item_bench('redemption')
@@ -144,21 +143,20 @@ def reforgerTest():
     assert test4
 
 def thiefsGloveCombatTest():
-    p1 = setup(1)
+    p1 = setup()
     p1.gold = 1000
     p1.max_units = 1
-    p2 = setup(2)
+    p2 = setup()
     p2.gold = 1000
     p2.max_units = 1
     p1.buy_champion(champion('nami'))
     p2.buy_champion(champion('nami'))
     p1.add_to_item_bench('thiefs_gloves')
-    # p2.add_to_item_bench('thiefs_gloves')
+    p2.add_to_item_bench('thiefs_gloves')
     p1.move_bench_to_board(0, 0, 0)
     p2.move_bench_to_board(0, 0, 0)
     p1.move_item(0, 0, 0)
-    # p2.move_item(0, 0, 0)
-    print(p1.board[0][0].origin, p2.board[0][0].origin)
+    p2.move_item(0, 0, 0)
     c_object.run(c_object.champion, p1, p2)
     assert p1.board[0][0].items[0] == 'thiefs_gloves'
 
@@ -203,8 +201,6 @@ def kaynTests():
     assert p1.item_bench[1] == 'kayn_rhast'
     p2.start_round(3)
     assert p2.kayn_transformed
-    p2.start_round(10)
-    p2.start_round(16)
     p1.move_item(0, 0, 0)
     assert p2.item_bench[0] == 'kayn_shadowassassin'
     assert p2.item_bench[1] == 'kayn_rhast'
