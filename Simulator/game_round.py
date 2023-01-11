@@ -126,7 +126,7 @@ class Game_Round:
                     config.WARLORD_WINS['red'] = players[player_index].win_streak
 
                     # Main simulation call
-                    index_won, damage = champion.run(champion.champion, players[num], players[player_index],
+                    index_won, damage, info = champion.run(champion.champion, players[num], players[player_index],
                                                      self.ROUND_DAMAGE[round_index][1])
 
                     # Draw

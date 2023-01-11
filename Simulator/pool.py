@@ -77,7 +77,6 @@ class pool:
 	# Num is the number of samples to be returned
 	# Index is the level of the champion you want to be sampled, -1 for random or to follow level.
 	# TO DO: Turn the cost arrays into a dictionary of dictionaries.
-	# TO DO: Implement the chosen mechanic and ensure the doubling of the right stat
 	# Chosen is implemented as a string with the class being the possible one.
 	def sample(self, player, num, idx=-1):
 		if player is None:

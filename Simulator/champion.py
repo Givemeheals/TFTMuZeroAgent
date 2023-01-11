@@ -30,7 +30,8 @@ test_multiple = {'blue': 0, 'red': 0, 'bugged out': 0, 'draw': 0}
 
 class champion:
     def __init__(self, name, team=None, y=-1, x=-1, stars=1, itemlist=None, overlord=None,
-                 sandguard_overlord_coordinates=None, chosen=False, kayn_form=None, augments=[]):
+                 sandguard_overlord_coordinates=None, chosen=False, kayn_form=None, augments=[], team_tiers=None,
+                 tome_of_traits=False, champion_counter=0):
 
         if itemlist is None:
             itemlist = []
@@ -68,8 +69,6 @@ class champion:
         self.mana_generation = 1  # enlightened - trait
         self.castMS = -50000  # the timestamp of the last cast
         self.ability_requires_target = ABILITY_REQUIRES_TARGET[name]
-        self.mana_per_second = 0
-        self.mps_increased = 0
 
         self.target = None
         self.target_y = None
@@ -138,6 +137,13 @@ class champion:
         self.kayn_form = kayn_form
 
         self.big_friend = 1
+        self.preparation_stacks = 0
+        self.tome_of_traits = tome_of_traits
+        self.ascension_value = 1
+        self.thrill_of_the_hunt = False
+        self.axiom_arc = False
+        self.blue_battery = 0
+        self.combat_training = False
 
         if chosen: 
             self.health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
@@ -149,6 +155,8 @@ class champion:
             self.max_health += 200
 
         self.augments = augments
+        self.team_tiers = team_tiers
+        self.champion_counter = champion_counter
 
         if name != 'aphelios_turret':
             items.initiate(self)
@@ -232,8 +240,14 @@ class champion:
             damage -= target.damage_reduction
             damage *= self.deal_increased_damage
 
-            if not item_damage:
+            if not item_damage and not trait_damage:
                 damage = damage * target.spell_damage_reduction_percentage
+                for x in self.augments:
+                    if x[0] == 'ludens_echo':
+                        damage += x[1]
+                        enemies = field.enemies_in_distance(self, target.y, target.x, 2)
+                        if enemies:
+                            self.spell(self, enemies[0], x[1], 0, False, False, True)
 
             if damage < 0:
                 damage = 0
@@ -302,8 +316,8 @@ class champion:
                            format(ceil(target.health), ceil(target.health - damage), ceil(shield_old),
                                   ceil(target.shield_amount()), crit_string, burn_string, item_string, trait_string))
 
-                target.health -= damage * target.big_friend
-                if MILLIS() > target.castMS + target.manalock and not target.ability_active  and target.maxmana > 0:
+                target.health -= damage * target.big_friend * self.ascension_value
+                if MILLIS() > target.castMS + target.manalock and not target.ability_active and target.maxmana > 0:
                     if not target.name == 'riven' or ability.riven_helper(target, {}):
                         old_mana = target.mana
                         target.mana += min((damage * config.MANA_DAMAGE_GAIN) *
@@ -538,7 +552,8 @@ def run(champion_q, player_1, player_2, round_damage=0):
                                          int(player_1.board[x][y].overlord_coordinates[1])]
                 blue.append(champion_q(player_1.board[x][y].name, 'blue', y, x, player_1.board[x][y].stars,
                                        player_1.board[x][y].items, False, daddy_coordinates, player_1.board[x][y].chosen
-                                       , player_1.board[x][y].kayn_form, player_1.board[x][y].augments))
+                                       , player_1.board[x][y].kayn_form, player_1.board[x][y].augments,
+                                       player_1.board[x][y].team_tiers, False))
             if player_2.board[x][y]:
                 daddy_coordinates = False
                 if player_2.board[x][y].name == 'sandguard':
@@ -547,7 +562,8 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 # Inverting because the combat system uses the whole board and does not mirror at start.
                 red.append(champion_q(player_2.board[x][y].name, 'red', 7 - y, 6 - x, player_2.board[x][y].stars,
                                       player_2.board[x][y].items, False, daddy_coordinates, player_2.board[x][y].chosen,
-                                      player_2.board[x][y].kayn_form, player_2.board[x][y].augments))
+                                      player_2.board[x][y].kayn_form, player_2.board[x][y].augments,
+                                      player_2.board[x][y].team_tiers, False))
 
     if len(blue) == 0 or len(red) == 0:
         if len(red) == 0 and len(blue) == 0:
@@ -625,7 +641,6 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 if que[0][0] == 'clear_idle':
                     champion_q.idle = True
                     champion_q.print(' cleared idle     ')
-                
                 if que[0][0] == 'change_stat':
                     change_stat(champion_q, que[0][0], 0, que[0][3], que[0][4], que[0][5], data)
 
@@ -763,6 +778,8 @@ def change_stat(a_champion, action, length, function, stat, value, data):
                 a_champion.print(' not blinded because wears rapid firecannon')
         else:
             a_champion.print(' not {} because wears quicksilver'.format(stat))
+    if function:
+        a_champion.add_que('change_stat', length, stat, value, data)
 
 
 def reset_global_variables():
@@ -820,7 +837,7 @@ def reset_global_variables():
     origin_class.elderwood_list = {'blue': 0, 'red': 0}
     origin_class.spirit_list = []
     origin_class.duelist_helper_list = [] 
-    origin_class.shade_helper_list = [] 
+    origin_class.shade_helper_list = []
 
 
 def survive_combat(player, champ_list):

@@ -157,6 +157,8 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
             damage *= champion.crit_damage
             crit_string = ' crit'
 
+        damage *= target.big_friend * champion.ascension_value
+
         item_string = ''
         if item_attack:
             item_string = ' item'
@@ -205,7 +207,7 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
                                                                                                 ceil(shield_old), ceil(
                             target.shield_amount()), crit_string, dodge_string, item_string, trait_string))
                     # dealing the damage and killing the enemy if necessary
-                    target.health -= damage
+                    target.health -= damage * target.big_friend
                     if (MILLIS() > target.castMS + target.manalock
                             and not target.ability_active and target.maxmana > 0):
                         if not target.name == 'riven' or ability.riven_helper(target, {}):
@@ -360,7 +362,7 @@ def die(champion, killer):
         champion.add_que('change_stat', revive_delay, None, 'champion', True)
 
 def kill_functions(champion):
-    if champion and len(champion.augments) > 0:
-        for x in range(0, len(champion.augments)):
-            if 'thrill_of_the_hunt' == champion.augments[x][0]:
-                champion.add_que('heal', -1, None, None, champion.augments[x][1])
+    if champion.thrill_of_the_hunt:
+        champion.add_que('heal', -1, None, None, augment[1])
+    if champion.axiom_arc:
+        champion.add_que('change_stat', -1, None, 'mana', champion.mana + augment[1])

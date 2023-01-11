@@ -3,6 +3,7 @@ from Simulator.pool import pool
 from Simulator.champion import champion
 from Simulator import champion as c_object
 from Simulator.item_stats import trait_items, starting_items
+from Simulator.field import enemies_in_distance
 
 
 def setup(player_num=0) -> player:
@@ -157,6 +158,7 @@ def thiefsGloveCombatTest():
     p2.move_bench_to_board(0, 0, 0)
     p1.move_item(0, 0, 0)
     p2.move_item(0, 0, 0)
+    print(p1.team_tiers)
     c_object.run(c_object.champion, p1, p2)
     assert p1.board[0][0].items[0] == 'thiefs_gloves'
 

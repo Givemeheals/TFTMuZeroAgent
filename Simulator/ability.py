@@ -43,7 +43,7 @@ def default_ability_calls(champion):
     champion.spell_has_used_ludens = False  # ludens_echo helper
 
     champion.mana_cost_increased = False
-    champion.mana = 0
+    champion.mana = champion.blue_battery
     champion.castMS = champion_functions.MILLIS()
 
 

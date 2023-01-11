@@ -9,7 +9,7 @@ from Simulator.item_stats import items as item_list, basic_items, item_builds, t
 from Simulator.stats import COST
 from Simulator.pool_stats import cost_star_values
 from Simulator.origin_class_stats import tiers, fortune_returns
-from Simulator.augment_functions import augment_choice
+from Simulator.augment_functions import augment_choice, augment_functions, start_of_round_augments
 from math import floor
 
 
@@ -22,7 +22,9 @@ class player:
         self.level = 0
         self.exp = 0
         self.health = 100
+        self.max_health = 100
         self.player_num = player_num
+
         # print("player_num = " + str(self.player_num))
 
         self.win_streak = 0  # For purposes of gold generation at start of turn
@@ -120,8 +122,20 @@ class player:
         self.action_values = []
 
         self.augments = []
-        self.afk = False
+        self.afk = 0
         self.afk_turn_count = 0
+        self.consistency = 1
+        self.future_sight = False
+        self.lategame_specialist = 0
+        self.pandoras_bench = False
+        self.pandoras_items = False
+        self.preparation_power = 0
+        self.preparation_health = 0
+        self.preparation_limit = 0
+        self.calculated_loss = 0
+        self.free_refreshes = 0
+        self.clear_mind = 0
+        self.cluttered_mind = 0
 
     # Return value for use of pool.
     # Also I want to treat buying a unit with a full bench as the same as buying and immediately selling it
@@ -155,15 +169,6 @@ class player:
         bench_loc = self.item_bench_vacancy()
         self.item_bench[bench_loc] = item
         self.generate_item_vector()
-
-    def augment_functions(self):
-        if self.augments[-1] == 'afk':
-            self.afk = True
-        if self.augments[-1] == 'band_of_thieves':
-            if not self.item_bench_full(self.augments[-1][1]):
-                for i in range(self.augments[-1][1] - 1):
-                    self.item_bench[self.item_bench_vacancy()]
-
 
 
     def bench_full(self):
@@ -220,7 +225,7 @@ class player:
             for y in range(3):
                 if self.board[x][y]:
                     self.board[x][y].augments.append(new_augment)
-        self.augment_functions()
+        augment_functions(self)
 
     def decide_vector_generation(self, x):
         if x:
@@ -474,11 +479,11 @@ class player:
         self.gold += interest
         self.gold += 5
         if self.win_streak == 2 or self.win_streak == 3 or self.loss_streak == 2 or self.loss_streak == 3:
-            self.gold += 1
+            self.gold += 1 * self.consistency
         elif self.win_streak == 4 or self.loss_streak == 4:
-            self.gold += 2
+            self.gold += 2 * self.consistency
         elif self.win_streak >= 5 or self.loss_streak >= 5:
-            self.gold += 3
+            self.gold += 3 * self.consistency
         self.generate_player_vector()
 
     # num of items to be added to bench, set 0 if not adding.
@@ -520,6 +525,8 @@ class player:
             self.exp -= self.level_costs[self.level]
             self.level += 1
             self.max_units += 1
+            if self.lategame_specialist != 0 and self.level == 9:
+                self.gold += self.lategame_specialist
             if self.level >= 5:
                 self.reward += 0.5 * self.level_reward
                 self.print("+{} reward for leveling to level {}".format(0.5 * self.level_reward, self.level))
@@ -545,7 +552,8 @@ class player:
     # location to pick which unit from bench goes to board.
     def move_bench_to_board(self, bench_x, board_x, board_y):
         # print("bench_x = " + str(bench_x) + " with len(self.bench) = " + str(len(self.bench)))
-        if 0 <= bench_x < 9 and self.bench[bench_x] and 7 > board_x >= 0 and 4 > board_y >= 0:
+        if 0 <= bench_x < 9 and self.bench[bench_x] and 7 > board_x >= 0 and 4 > board_y >= 0 \
+                and not self.bench_x.tome_of_traits:
             if self.num_units_in_play < self.max_units:
                 # TO DO - IMPLEMENT AZIR TURRET SPAWNS
                 m_champion = self.bench[bench_x]
@@ -654,7 +662,7 @@ class player:
             board = True
         if y == -1:
             champ = self.bench[x]
-        if self.item_bench[xBench] and champ:
+        if self.item_bench[xBench] and champ and not champ.tome_of_traits:
             # thiefs glove exception
             self.print("moving {} to {} with items {}".format(self.item_bench[xBench], champ.name, champ.items))
             # kayn item support
@@ -794,6 +802,7 @@ class player:
                 num += 1
         return num
 
+
     def print(self, msg):
         self.printt('{:<120}'.format('{:<8}'.format(self.player_num)
                                      + '{:<20}'.format(str(time.time_ns() - self.start_time)) + msg))
@@ -844,6 +853,11 @@ class player:
     # if(config.PRINTMESSAGES): print(msg)
 
     def refresh(self):
+        if self.free_refreshes != 0:
+            self.refresh_cost = 0
+            self.free_refreshes -= 1
+        else:
+            self.refresh_cost = 2
         if self.gold >= self.refresh_cost:
             self.gold -= self.refresh_cost
             self.reward += self.refresh_reward * self.refresh_cost
@@ -959,6 +973,11 @@ class player:
         # Check if champion has items
         # Are there any champions with special abilities on sell.
         if self.bench[location]:
+            if self.bench[location].tome_of_traits:
+                r = random.randint(0, len(trait_items) - 1)
+                self.add_to_item_bench(list(trait_items.values())[r])
+                self.bench[location] = None
+                return True
             if not (self.remove_triple_catalog(self.bench[location], golden=golden) and
                     self.return_item_from_bench(location)):
                 self.print("Mistake in sell from bench with {} and level {}".format(self.bench[location],
@@ -1100,6 +1119,7 @@ class player:
         self.start_time = time.time_ns()
         self.round = t_round
         self.reward += self.num_units_in_play * self.minion_count_reward
+        start_of_round_augments(self)
         # self.print(str(self.num_units_in_play * self.minion_count_reward) + " reward for minions in play")
         if self.round == 3 or self.round == 10 or self.round == 16:
             self.decide_augment()
@@ -1113,11 +1133,6 @@ class player:
             self.kayn_transform()
         for x in range(len(self.thiefs_glove_loc)):
             self.thiefs_gloves(self.thiefs_glove_loc[x][0], self.thiefs_glove_loc[x][1])
-        if self.afk:
-            self.afk_turn_count += 1
-            if self.afk_turn_count == 3:
-                self.afk = False
-                self.gold += 30
 
     def won_game(self):
         self.reward += self.won_game_reward

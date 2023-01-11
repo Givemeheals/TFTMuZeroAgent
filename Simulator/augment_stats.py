@@ -1,7 +1,7 @@
 silver_augments = {
     'afk':                  0,
     'band_of_thieves':      0,
-    'battlemage':           [30, 15],
+    'battlemage':           0,
     'big_friend':           0,
     'built_different':      0,
     'celestial_blessing':   0,
@@ -35,7 +35,7 @@ gold_augments = {
     'ancient_archives':     0,
     'ascension':            0,
     'axiom_arc':            0,
-    'battlemage':           [45, 20],
+    'battlemage':           0,
     'big_friend':           0,
     'blue_battery':         0,
     'built_different':      0,

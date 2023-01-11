@@ -604,7 +604,7 @@ def titans_resolve_helper(unit):
             if t[0] == unit:
                 titans_resolve_list[i][2] = True
 
-    
+
 # see item notes
 def trap_claw(champion, target):
 

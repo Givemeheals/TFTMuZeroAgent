@@ -1289,3 +1289,76 @@ ACTIVE_DAMAGE_REDUCTION = {'tahmkench': [0, 15, 25, 75]}
 DODGE = 0.0
 
 DAMAGE_PER_UNIT = [0, 2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+
+ONE_COST_UNITS = [
+    'diana'
+    'elise'
+    'fiora'
+    'garen'
+    'lissandra'
+    'maokai'
+    'nami'
+    'nidalee'
+    'tahmkench'
+    'twistedfate'
+    'vayne'
+    'wukong'
+    'yasuo'
+]
+
+TWO_COST_UNITS = [
+    'annie'
+    'aphelios'
+    'hecarim'
+    'janna'
+    'jarvaniv'
+    'jax'
+    'lulu'
+    'pyke'
+    'sylas'
+    'teemo'
+    'thresh'
+    'vi'
+    'zed'
+]
+
+THREE_COST_UNITS = [
+    'akali'
+    'evelynn'
+    'irelia'
+    'jinx'
+    'kalista'
+    'katarina'
+    'kennen'
+    'kindred'
+    'lux'
+    'nunu'
+    'veigar'
+    'xinzhao'
+    'yuumi'
+]
+
+FOUR_COST_UNITS = [
+    'aatrox'
+    'ahri'
+    'ashe'
+    'cassiopeia'
+    'jhin'
+    'morgana'
+    'riven'
+    'sejuani'
+    'shen'
+    'talon'
+    'warwick'
+]
+
+FIVE_COST_UNITS = [
+    'azir'
+    'ezreal'
+    'kayn'
+    'leesin'
+    'lillia'
+    'sett'
+    'yone'
+    'zilean'
+]
