@@ -36,7 +36,7 @@ class TFT_Simulator(gym.Env):
         num_alive = 0
         for i, player in enumerate(self.PLAYERS):
             if player:
-                if player.health <= 0:
+                if player.health <= 0 and not player.last_stand:
                     self.NUM_DEAD += 1
                     self.game_round.NUM_DEAD = self.NUM_DEAD
                     self.pool_obj.return_hero(player)
@@ -44,6 +44,9 @@ class TFT_Simulator(gym.Env):
                     self.PLAYERS[i] = None
                     self.game_round.update_players(self.PLAYERS)
                 else:
+                    if player.health <= 0:
+                        player.last_stand = False
+                        player.last_stand_activated = True
                     num_alive += 1
         return num_alive
 

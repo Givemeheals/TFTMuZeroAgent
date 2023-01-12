@@ -61,6 +61,8 @@ items = {
     'champion_duplicator': {},
     'magnetic_remover': {},
     'reforger': {},
+
+    'infinity_force': {'AD': 33, 'armor': 33, 'MR': 33, 'AS': 1.33, 'SP': .33, 'health': 33}
 }
 
 item_builds = {

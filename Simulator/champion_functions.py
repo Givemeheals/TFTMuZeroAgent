@@ -362,7 +362,12 @@ def die(champion, killer):
         champion.add_que('change_stat', revive_delay, None, 'champion', True)
 
 def kill_functions(champion):
-    if champion.thrill_of_the_hunt:
-        champion.add_que('heal', -1, None, None, augment[1])
-    if champion.axiom_arc:
-        champion.add_que('change_stat', -1, None, 'mana', champion.mana + augment[1])
+    if champion.thrill_of_the_hunt != 0:
+        champion.add_que('heal', -1, None, None, champion.thrill_of_the_hunt)
+    if champion.axiom_arc != 0:
+        champion.add_que('change_stat', -1, None, 'mana', champion.mana + champion.axiom_arc)
+    if champion.combat_training_iteration != 0:
+        champion.combat_training += champion.combat_training_iteration
+        champion.add_que('change_stat', -1, None, 'AD', champion.AD + champion.combat_training_iteration)
+        champion.add_que('info_update', -1, None, 'combat_training', {tuple([champion.starting_x, champion.starting_y]):
+                                                                          champion.combat_training})

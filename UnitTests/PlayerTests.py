@@ -153,12 +153,12 @@ def thiefsGloveCombatTest():
     p1.buy_champion(champion('nami'))
     p2.buy_champion(champion('nami'))
     p1.add_to_item_bench('thiefs_gloves')
-    p2.add_to_item_bench('thiefs_gloves')
+    p2.add_to_item_bench('deathblade')
     p1.move_bench_to_board(0, 0, 0)
     p2.move_bench_to_board(0, 0, 0)
+    p2.move_bench_to_board(1, 1, 0)
     p1.move_item(0, 0, 0)
     p2.move_item(0, 0, 0)
-    print(p1.team_tiers)
     c_object.run(c_object.champion, p1, p2)
     assert p1.board[0][0].items[0] == 'thiefs_gloves'
 

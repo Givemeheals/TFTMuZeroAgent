@@ -126,8 +126,11 @@ class Game_Round:
                     config.WARLORD_WINS['red'] = players[player_index].win_streak
 
                     # Main simulation call
-                    index_won, damage, info = champion.run(champion.champion, players[num], players[player_index],
-                                                     self.ROUND_DAMAGE[round_index][1])
+                    index_won, damage, blue_info, red_info = champion.run(champion.champion, players[num],
+                                                            players[player_index], self.ROUND_DAMAGE[round_index][1])
+
+                    after_round_updates(players[num], blue_info)
+                    after_round_updates(players[player_index], red_info)
 
                     # Draw
                     if index_won == 0:
@@ -163,8 +166,9 @@ class Game_Round:
                     players[num].start_time = time.time_ns()
                     config.WARLORD_WINS['blue'] = players[num].win_streak
                     config.WARLORD_WINS['red'] = player_copy.win_streak
-                    index_won, damage = champion.run(champion.champion, players[num], player_copy,
+                    index_won, damage, blue_info = champion.run(champion.champion, players[num], player_copy,
                                                      self.ROUND_DAMAGE[round_index][1])
+                    after_round_updates(players[num], blue_info)
                     # if the alive player loses to a dead player, the dead player's reward is
                     # given out to all other alive players
                     alive = []
@@ -370,3 +374,11 @@ def log_to_file_combat():
                     out.write(str(line))
                     out.write('\n')
     champion.log = []
+
+
+def after_round_updates(player, info):
+    if info == {}:
+        return True
+    else:
+        for x in list(info['combat_training'].keys()):
+            player.board[x[0]][x[1]].combat_training = info['combat_training'][x]

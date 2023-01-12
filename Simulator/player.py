@@ -136,6 +136,11 @@ class player:
         self.free_refreshes = 0
         self.clear_mind = 0
         self.cluttered_mind = 0
+        self.hustler = 0
+        self.hustler_cut_off = 0
+        self.last_stand = False
+        self.last_stand_activated = False
+        self.metabolic_accelerator = 0
 
     # Return value for use of pool.
     # Also I want to treat buying a unit with a full bench as the same as buying and immediately selling it
@@ -476,6 +481,8 @@ class player:
             self.gold += floor(self.gold / 10)
             return
         interest = min(floor(self.gold / 10), 5)
+        if self.gold < self.hustler_cut_off:
+            self.gold += self.hustler
         self.gold += interest
         self.gold += 5
         if self.win_streak == 2 or self.win_streak == 3 or self.loss_streak == 2 or self.loss_streak == 3:
@@ -553,7 +560,7 @@ class player:
     def move_bench_to_board(self, bench_x, board_x, board_y):
         # print("bench_x = " + str(bench_x) + " with len(self.bench) = " + str(len(self.bench)))
         if 0 <= bench_x < 9 and self.bench[bench_x] and 7 > board_x >= 0 and 4 > board_y >= 0 \
-                and not self.bench_x.tome_of_traits:
+                and not self.bench[bench_x].tome_of_traits:
             if self.num_units_in_play < self.max_units:
                 # TO DO - IMPLEMENT AZIR TURRET SPAWNS
                 m_champion = self.bench[bench_x]

@@ -212,6 +212,7 @@ HEALTH = {
     'construct': [0, 1500, 2500, 3000, 5000],
     'galio': [0, 800, 1400, 2000],
     'sandguard': 950,
+    'target_dummy': [500, 900, 1620, 2916],
 
     'meleeminion': 250,
     'rangedminion': 150,

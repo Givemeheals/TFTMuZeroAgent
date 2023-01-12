@@ -44,6 +44,11 @@ def augment_functions(player):
         player.clear_mind = player.augments[-1][1]
     elif player.augments[-1][0] == 'cluttered_mind':
         player.cluttered_mind = player.augments[-1][1]
+    elif player.augments[-1][0] == 'component_grab_bag':
+        if not player.item_bench_full(player.augments[-1][1]):
+            for _ in range(player.augments[-1][1]):
+                r = random.randint(0, len(starting_items) - 1)
+                player.item_bench[player.item_bench_vacancy()] = starting_items[r]
     elif player.augments[-1][0] == 'consistency':
         player.consistency = 2
     elif player.augments[-1][0] == 'future_sight':
@@ -51,6 +56,9 @@ def augment_functions(player):
         if not player.item_bench_full(player.augments[-1][1]):
             for i in range(player.augments[-1][1] - 1):
                 player.item_bench[player.item_bench_vacancy()] = 'zephyr'
+    elif player.augments[-1][0] == 'hustler':
+        player.hustler = player.augments[-1][1][0]
+        player.hustler_cut_off = player.augments[-1][1][1]
     elif player.augments[-1][0] == 'item_grab_bag':
         if not player.item_bench_full(player.augments[-1][1]):
             for i in range(player.augments[-1][1] - 1):
@@ -58,10 +66,26 @@ def augment_functions(player):
                 player.item_bench[player.item_bench_vacancy()] = thiefs_gloves_items[r]
     elif player.augments[-1][0] == 'lategame_specialist':
         player.lategame_specialist = player.augments[-1][1]
+    elif player.augments[-1][0] == 'last_stand':
+        player.last_stand = True
+    elif player.augments[-1][0] == 'metabolic_accelerator':
+        player.metabolic_accelerator = player.augments[-1][1]
     elif player.augments[-1][0] == 'pandoras_bench':
         player.pandoras_bench = True
     elif player.augments[-1][0] == 'pandoras_items':
         player.pandoras_items = True
+    elif player.augments[-1][0] == 'phony_frontline':
+        dummy_added = 0
+        x = 6
+        y = 3
+        while dummy_added < 2:
+            if not player.board[x][y]:
+                player.board[x][y] = champion.champion('target_dummy', target_dummy=True, round_num=player.round)
+                dummy_added += 1
+            x -= 1
+            if x == -1:
+                x = 6
+                y -= 1
     elif player.augments[-1][0] == 'preparation':
         player.preparation_power = player.augments[-1][1][0]
         player.preparation_health = player.augments[-1][1][1]
@@ -75,7 +99,7 @@ def augment_functions(player):
 
 def start_of_battle_augments(team):
     if team and len(team[0].augments) > 0:
-        for x in range(len(team[0].augments) - 1):
+        for x in range(len(team[0].augments)):
             if team[0].augments[x][0] == 'ascension':
                 team[0].add_que('execute_function', 15000, [ascension, {team[0]}])
             elif team[0].augments[x][0] == 'axiom_arc':
@@ -107,6 +131,10 @@ def start_of_battle_augments(team):
                 for champ in team:
                     champ.lifesteal += champ.augments[x][1]
                     champ.lifesteal_spells += champ.augments[x][1]
+            elif team[0].augments[x][0] == 'combat_training':
+                for champ in team:
+                    champ.combat_training_iteration = champ.augments[x][1][0]
+                    champ.AD += champ.combat_training + champ.augments[x][1][1]
             elif team[0].augments[x][0] == 'cybernetic_implants':
                 for champ in team:
                     champ.health += champ.augments[x][1][0]
@@ -142,10 +170,21 @@ def start_of_battle_augments(team):
             elif team[0].augments[x][0] == 'first_aid_kit':
                 for champ in team:
                     champ.healing_strength += champ.augments[x][1]
+            elif team[0].augments[x][0] == 'jeweled_lotus':
+                for champ in team:
+                    champ.crit_chance += champ.augments[x][1]
+                    champ.jeweled_lotus = True
             elif team[0].augments[x][0] == 'knifes_edge':
                 for champ in team:
                     if champ.y == 2 or champ.y == 3 or champ.y == 4 or champ.y == 5:
                         champ.AD += champ.augments[x][1]
+            elif team[0].augments[x][0] == 'last_stand' and team[0].last_stand:
+                for champ in team:
+                    champ.health += champ.augments[x][1][0]
+                    champ.armor += champ.augments[x][1][1]
+                    champ.MR += champ.augments[x][1][1]
+                    champ.lifesteal += champ.augments[x][1][2]
+                    champ.lifesteal_spells += champ.augments[x][1][2]
             elif team[0].augments[x][0] == 'makeshift_armor':
                 for champ in team:
                     if not champ.items:
@@ -170,6 +209,8 @@ def start_of_battle_augments(team):
 
 
 def start_of_round_augments(player):
+    if player.health + player.metabolic_accelerator <= 100:
+        player.health += player.metabolic_accelerator
     if player.pandoras_bench:
         pandoras_bench_funct(player)
     if player.pandoras_items:
