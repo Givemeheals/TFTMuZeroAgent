@@ -65,6 +65,27 @@ items = {
     'infinity_force': {'AD': 33, 'armor': 33, 'MR': 33, 'AS': 1.33, 'SP': .33, 'health': 33}
 }
 
+
+uncraftable_items = [
+
+'bf_sword',
+'chain_vest',
+'giants_belt',
+'needlessly_large_rod',
+'negatron_cloak',
+'recurve_bow',
+'sparring_gloves',
+'spatula',
+'tear_of_the_goddess',
+'kayn_rhast',
+'kayn_shadowassassin',
+'champion_duplicator',
+'magnetic_remover',
+'reforger',
+
+]
+
+
 item_builds = {
     'bloodthirster': ['bf_sword', 'negatron_cloak'],
     'blue_buff': ['tear_of_the_goddess', 'tear_of_the_goddess'],

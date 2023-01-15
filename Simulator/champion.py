@@ -12,9 +12,9 @@ from Simulator.augment_functions import start_of_battle_augments, woodland_charm
 from Simulator.champion_functions import attack, die, MILLIS, MILLISECONDS_INCREASE, add_damage_dealt
 from Simulator import ability, active, field, item_stats, items
 
-
 que = []
 log = []
+
 
 def printt(msg):
     if config.PRINTMESSAGES:
@@ -47,7 +47,7 @@ class champion:
             self.health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.max_health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.AD = round(AD[name] * config.STARMULTIPLIER ** (stars - 1), 1)
-            
+
         self.SP = 1
 
         self.AS = AS[name]
@@ -60,7 +60,7 @@ class champion:
         self.mana = MANA[name]
         self.maxmana = MAXMANA[name]
         self.cost = COST[name]
-        
+
         self.manalock = MANALOCK[name]
         # not going to start changing the whole structure of the manalock code since that could create some bugs
         # shen is the only unit whose manalock scales by stars so just forcing the change here.
@@ -147,13 +147,13 @@ class champion:
         self.ludens_echo = 0
         self.electrocharge = 0
 
-        if chosen: 
+        if chosen:
             self.health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.max_health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.AD = round(AD[name] * config.STARMULTIPLIER ** (stars - 1), 1)
-            self.stars = 2 
+            self.stars = 2
             # self.cost = cost_star_values[COST[name]][self.stars]
-            self.health += 200 
+            self.health += 200
             self.max_health += 200
 
         self.augments = augments
@@ -176,10 +176,12 @@ class champion:
             self.health = HEALTH[name][stars]
             self.max_health = HEALTH[name][stars]
             self.AD = AD[name]
-        
+
         if name == 'galio':
-            self.health = HEALTH[name][stars] + HEALTH[name][stars] * config.GALIO_MULTIPLIER * origin_class.cultist_stars[team]
-            self.max_health = HEALTH[name][stars] + HEALTH[name][stars] * config.GALIO_MULTIPLIER * origin_class.cultist_stars[team]
+            self.health = HEALTH[name][stars] + HEALTH[name][stars] * config.GALIO_MULTIPLIER * \
+                          origin_class.cultist_stars[team]
+            self.max_health = HEALTH[name][stars] + HEALTH[name][stars] * config.GALIO_MULTIPLIER * \
+                              origin_class.cultist_stars[team]
             self.AD = AD[name][stars] + AD[name][stars] * config.GALIO_MULTIPLIER * origin_class.cultist_stars[team]
 
         if name == 'aphelios_turret':
@@ -238,7 +240,7 @@ class champion:
             if self.pumped_up:  # the_boss -trait
                 true_dmg += dmg
                 dmg = 0
-            
+
             items.gargoyle_stoneplate(target)  # gargoyle_stoneplate (needs to take effect before armor or MR is used)
             if not item_damage:
                 items.morellonomicon(self, target)  # morellonomicon
@@ -249,9 +251,9 @@ class champion:
             if not item_damage:
                 dmg *= items.giant_slayer(self, target)  # giants_slayer
             if target.MR >= 0:
-                damage = dmg * (100/(100+target.MR)) * self.SP
+                damage = dmg * (100 / (100 + target.MR)) * self.SP
             else:
-                damage = dmg * (2 - 100/(100 - target.MR)) * self.SP
+                damage = dmg * (2 - 100 / (100 - target.MR)) * self.SP
 
             # SP doesnt affect items' damage
             if item_damage:
@@ -266,7 +268,7 @@ class champion:
             damage -= target.damage_reduction
             damage *= self.deal_increased_damage
 
-            if not item_damage and not trait_damage:
+            if not item_damage:
                 damage = damage * target.spell_damage_reduction_percentage
                 if self.ludens_echo != 0:
                     damage += self.ludens_echo
@@ -279,7 +281,7 @@ class champion:
             if target.immune:
                 damage = 0
 
-            crit_random = random.randint(1, 100)/100
+            crit_random = random.randint(1, 100) / 100
             crit_string = ''
             # jeweled gauntlet -item     #bramble vest -item
             if ('jeweled_gauntlet' in self.items or self.jeweled_lotus) and crit_random < self.crit_chance \
@@ -315,7 +317,7 @@ class champion:
                     self.add_que('heal', -1, None, None, damage * self.lifesteal_spells)
                     if self.celestial_blessing != 0 and self.shield_amount() < self.celestial_blessing:
                         self.add_que('shield', -1, None, None, damage * self.lifesteal_spells)
-                
+
                 add_damage_dealt(self, damage, target)
 
                 origin_class.dazzler(self, target)  # dazzler -trait
@@ -331,12 +333,12 @@ class champion:
                             target.shields = target.shields[1:]
                         else:
                             damage = 0
-                    
-                if not item_damage:
-                    items.blue_buff(self)               # blue_buff
 
-                items.deathblade(self, target)          # deathblade
-                items.hextech_gunblade(self, damage)    # hextech_gunblade
+                if not item_damage:
+                    items.blue_buff(self)  # blue_buff
+
+                items.deathblade(self, target)  # deathblade
+                items.hextech_gunblade(self, damage)  # hextech_gunblade
 
                 self.print(' deals ' + '{:<8}'.format(enemy_team) + ' ' + '{:<13}'.format(target.name) +
                            '{:<5}--> {:<8}   shield {:<5}--> {:<5} {}{}{}{}'.
@@ -374,14 +376,14 @@ class champion:
 
         else:
             items.trap_claw(self, target)  # trap_claw
-    
+
     def move(self, y, x, forced=False, sett=False):
         if self.idle or forced:
             if sett:
-                self.print(' moves from sit-ups   to   ({} , {})        '.format(y, x)) 
+                self.print(' moves from sit-ups   to   ({} , {})        '.format(y, x))
             else:
                 self.print(' moves from ({} , {})   to   ({} , {})        '.format(self.y, self.x, y, x))
-            
+
             field.coordinates[self.y][self.x] = None
             self.x = x
             self.y = y
@@ -446,7 +448,7 @@ class champion:
                 shield(self, action, length, function, stat, value, data)
             else:
                 que.append([action, self, MILLIS() + length, function, stat, value, data])
-                
+
         que.sort(key=lambda x: x[2])
 
     def burn(self, target):
@@ -555,7 +557,7 @@ class champion:
         self.health += 200
         self.max_health += 200
 
-    
+
 global blue
 global red
 
@@ -663,18 +665,20 @@ def run(champion_q, player_1, player_2, round_damage=0):
         
         while len(que) > 0 and MILLIS() > que[0][2]:
             champion_q = que[0][1]
-            data = que[0][6]  
+            data = que[0][6]
             # make sure that teemo's poison darts deal damage even after teemo himself has died
             # morgana deals if the ult is running and she dies
             # if ahri dies, she will still ult. range reduced in the executed function
-            if(champion_q in blue or champion_q in red) or \
+            if (champion_q in blue or champion_q in red) or \
                     (champion_q.name == 'teemo' and champion_q.health <= 0 and que[0][3] and 'target' in que[0][3][1]) \
                     or (champion_q.name == 'morgana' and champion_q.health <= 0 and que[0][3] and
                         'coordinates' in que[0][3][1]) or \
                     (champion_q.name == 'ahri' and champion_q.health <= 0 and que[0][3] and 'y' in que[0][3][1]):
+
                 if que[0][0] == 'clear_idle':
                     champion_q.idle = True
                     champion_q.print(' cleared idle     ')
+
                 if que[0][0] == 'change_stat':
                     change_stat(champion_q, que[0][0], 0, que[0][3], que[0][4], que[0][5], data)
 
@@ -696,7 +700,9 @@ def run(champion_q, player_1, player_2, round_damage=0):
                         champion_q.target_y = new_target.y
                         champion_q.target_x = new_target.x
                         if champion_q.target != old_target:
-                            champion_q.print(' has a new target: ' + '{:<8}'.format(champion_q.target.team) + '{:<8}'.format(champion_q.target.name) + '  [{}, {}]'.format(champion_q.target.y, champion_q.target.x))
+                            champion_q.print(' has a new target: ' + '{:<8}'.format(champion_q.target.team) +
+                                             '{:<8}'.format(champion_q.target.name) +
+                                             '  [{}, {}]'.format(champion_q.target.y, champion_q.target.x))
                     else:
                         field.find_target(champion_q)
 
@@ -877,8 +883,8 @@ def reset_global_variables():
     for o in origin_class.amounts:
         origin_class.amounts[o] = {'blue': 0, 'red': 0}
 
-    origin_class.divine_attack_list = [] 
-    origin_class.divine_list = [] 
+    origin_class.divine_attack_list = []
+    origin_class.divine_list = []
     origin_class.elderwood_list = {'blue': 0, 'red': 0}
     origin_class.spirit_list = []
     origin_class.duelist_helper_list = [] 
