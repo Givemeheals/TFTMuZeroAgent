@@ -5,8 +5,16 @@ numpy~=1.23.5
 cudatoolkit
 
 config~=0.5.1
-tensorflow-gpu~=2.11.0
+tensorflow-gpu~=2.10.1
 ray~=2.2.0
 gym~=0.23.1
 PettingZoo~=1.22.3
 gymnasium~=0.27.0
+
+pandas
+dm-tree
+tabulate
+scikit-image
+scikit-learn~=1.2.0
+
+sklearn~=0.0.post1
