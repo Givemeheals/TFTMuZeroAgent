@@ -7,6 +7,7 @@ from Simulator import champion, origin_class
 from Simulator.item_stats import items as item_list, basic_items, item_builds, thiefs_gloves_items, \
                                                                     starting_items, trait_items
 from Simulator.stats import COST
+from Simulator.pool import pool
 from Simulator.pool_stats import cost_star_values
 from Simulator.origin_class_stats import tiers, fortune_returns
 from Simulator.augment_functions import augment_choice, augment_functions, start_of_round_augments
@@ -122,25 +123,14 @@ class player:
         self.action_values = []
 
         self.augments = []
-        self.afk = 0
+        self.augment_dict = {}
         self.afk_turn_count = 0
         self.consistency = 1
         self.future_sight = False
-        self.lategame_specialist = 0
-        self.pandoras_bench = False
-        self.pandoras_items = False
-        self.preparation_power = 0
-        self.preparation_health = 0
-        self.preparation_limit = 0
-        self.calculated_loss = 0
         self.free_refreshes = 0
-        self.clear_mind = 0
-        self.cluttered_mind = 0
-        self.hustler = 0
-        self.hustler_cut_off = 0
-        self.last_stand = False
         self.last_stand_activated = False
-        self.metabolic_accelerator = 0
+        self.max_interest = 5
+        self.damage_multiplier = 1
 
     # Return value for use of pool.
     # Also I want to treat buying a unit with a full bench as the same as buying and immediately selling it
@@ -196,6 +186,8 @@ class player:
         self.gold -= cost_star_values[a_champion.cost - 1][a_champion.stars - 1]
         if a_champion.name == 'kayn':
             a_champion.kayn_form = self.kayn_form
+        a_champion.last_stand = self.last_stand_activated
+        a_champion.augments = self.augments
         success = self.add_to_bench(a_champion)
         # Putting this outside success because when the bench is full. It auto sells the champion.
         # Which adds another to the pool and need this here to remove the fake copy from the pool
@@ -211,26 +203,52 @@ class player:
         return success
 
     def buy_exp(self):
-        if self.gold < self.exp_cost or self.level == self.max_level:
-            self.reward += self.mistake_reward
-            return False
-        self.gold -= 4
-        # self.reward += 0.02
-        self.print("exp to {} on level {}".format(self.exp, self.level))
-        self.exp += 4
-        self.level_up()
-        self.generate_player_vector()
-        return True
+        if 'cruel_pact' not in self.augment_dict:
+            if self.gold < self.exp_cost or self.level == self.max_level:
+                self.reward += self.mistake_reward
+                return False
+            self.gold -= 4
+            # self.reward += 0.02
+            if 'level_up' in self.augment_dict:
+                self.exp += self.augment_dict['level_up']
+            else:
+                self.exp += 4
+            self.print("exp to {} on level {}".format(self.exp, self.level))
+            self.level_up()
+            self.generate_player_vector()
+            return True
+        else:
+            if self.health > self.augment_dict['cruel_pact'][0]:
+                self.health -= self.augment_dict['cruel_pact'][0]
+                self.reward -= 0.01 * self.augment_dict['cruel_pact'][0]
+                self.print(str(-0.01 * self.augment_dict['cruel_pact'][0]) + " reward for buying exp with cruel pact")
+                if 'level_up' in self.augment_dict:
+                    self.exp += self.augment_dict['level_up']
+                else:
+                    self.exp += 4
+                self.print("exp to {} on level {}".format(self.exp, self.level))
+                self.level_up()
+                self.generate_player_vector()
+            else:
+                self.reward += self.mistake_reward
+                self.print(str(self.mistake_reward) + ' reward for attempting to kill itself with cruel pact')
+                return False
 
     def decide_augment(self):
         options = augment_choice()
         new_augment = options[0]
-        self.augments.append(new_augment)
-        for x in range(6):
-            for y in range(3):
+        key = list(new_augment.keys())
+        value = list(new_augment.values())
+        self.augments.append([key[0], value[0]])
+        self.augment_dict.update(new_augment)
+        for x in range(7):
+            for y in range(4):
                 if self.board[x][y]:
-                    self.board[x][y].augments.append(new_augment)
-        augment_functions(self)
+                    self.board[x][y].augments = self.augments
+        for x in range(9):
+            if self.bench[x]:
+                self.bench[x].augments = self.augments
+        augment_functions(self, new_augment)
 
     def decide_vector_generation(self, x):
         if x:
@@ -242,6 +260,7 @@ class player:
         # auto-fill the board.
         num_units_to_move = self.max_units - self.num_units_in_play
         position_found = -1
+        self.free_refreshes = 0
         for _ in range(num_units_to_move):
             found_position = False
             for i in range(position_found + 1, len(self.bench)):
@@ -473,16 +492,21 @@ class player:
 
     # This gets called before any of the neural nets happen. This is the start of the round
     def gold_income(self, t_round):
-        self.exp += 2
+        march_of_progress = 0
+        if 'march_of_progress' in self.augment_dict:
+            march_of_progress = self.augment_dict['march_of_progress']
+        self.exp += 2 + march_of_progress
         self.level_up()
         if t_round <= 4:
             starting_round_gold = [0, 2, 2, 3, 4]
             self.gold += starting_round_gold[t_round]
             self.gold += floor(self.gold / 10)
             return
-        interest = min(floor(self.gold / 10), 5)
-        if self.gold < self.hustler_cut_off:
-            self.gold += self.hustler
+        if 'hustler' in self.augment_dict:
+            self.gold += self.augment_dict['hustler']
+            interest = 0
+        else:
+            interest = min(floor(self.gold / 10), self.max_interest)
         self.gold += interest
         self.gold += 5
         if self.win_streak == 2 or self.win_streak == 3 or self.loss_streak == 2 or self.loss_streak == 3:
@@ -532,14 +556,23 @@ class player:
             self.exp -= self.level_costs[self.level]
             self.level += 1
             self.max_units += 1
-            if self.lategame_specialist != 0 and self.level == 9:
-                self.gold += self.lategame_specialist
+            if self.level == 9 and 'lategame_specialist' in self.augment_dict:
+                self.gold += self.augment_dict['lategame_specialist']
+                self.augment_dict.pop('lategame_specialist')
             if self.level >= 5:
                 self.reward += 0.5 * self.level_reward
                 self.print("+{} reward for leveling to level {}".format(0.5 * self.level_reward, self.level))
             # Only needed if it's possible to level more than once in one transaction
+            if 'birthday_present' in self.augment_dict:
+                if not self.bench_full():
+                    temp_slot = self.bench_vacancy()
+                    x = min(1, self.level - 4)
+                    y = min(x, 5)
+                    name = self.pool_obj.sample(self, 1, y)[0]
+                    self.bench[temp_slot] = champion.champion(name, itemlist=[], augments=self.augments,
+                                            kayn_form=self.kayn_form, last_stand=self.last_stand_activated,
+                                            round_num=self.round, stars=2)
             self.level_up()
-
         if self.level == self.max_level:
             self.exp = 0
 
@@ -869,6 +902,13 @@ class player:
             self.gold -= self.refresh_cost
             self.reward += self.refresh_reward * self.refresh_cost
             self.print("Reward for refreshing shop is " + str(self.refresh_reward * self.refresh_cost))
+            if 'golden_ticket' in self.augment_dict:
+                r = random.randint(0, 100)
+                if r <= self.augment_dict['golden_ticket']:
+                    self.free_refreshes += 1
+            if 'wise_spending' in self.augment_dict:
+                self.exp += self.augment_dict['wise_spending']
+                self.level_up()
             return True
         self.reward += self.mistake_reward
         return False
@@ -883,16 +923,26 @@ class player:
                 if self.bench[x].items[0] == 'thiefs_gloves':
                     self.thiefs_glove_loc.remove([x, -1])
                 # if I have enough space on the item bench for the number of items needed
-                if not self.item_bench_full(len(self.bench[x].items)):
+                if not self.item_bench_full(len(self.bench[x].items)) and not 'salvage_bin' in self.augment_dict:
                     # Each item in possession
                     for i in self.bench[x].items:
                         # thieves glove exception
                         self.item_bench[self.item_bench_vacancy()] = i
                 # if there is only one or two spots left on the item_bench and thiefs_gloves is removed
-                elif not self.item_bench_full(1) and self.bench[x].items[0] == "thiefs_gloves":
+                elif not self.item_bench_full(1) and self.bench[x].items[0] == "thiefs_gloves" and not 'salvage_bin' in self.augment_dict:
                     self.item_bench[self.item_bench_vacancy()] = self.bench[x].items[0]
+                elif 'salvage_bin' in self.augment_dict and self.bench[x].items[0] != 'thiefs_gloves':
+                    for item in self.bench[x].items :
+                        if item in list(item_builds.values()) and not self.item_bench_full(2):
+                            self.item_bench[self.item_bench_vacancy()] = item_builds[item][0]
+                            self.item_bench[self.item_bench_vacancy()] = item_builds[item][1]
+                        elif not self.item_bench_full(1):
+                            self.item_bench[self.item_bench_vacancy()] = item
+                elif 'salvage_bin' in self.augment_dict and self.bench[x].items[0] == 'thiefs_gloves':
+                    for _ in range(2):
+                        if not self.item_bench_full(1):
+                            self.item_bench[self.item_bench_vacancy()] = 'sparring_gloves'
                 self.bench[x].items = []
-                self.bench[x].num_items = 0
             self.generate_item_vector()
             return True
         self.print("No units at bench location {}".format(x))
@@ -907,16 +957,25 @@ class player:
                 if a_champion.items[0] == 'thiefs_gloves':
                     self.thiefs_glove_loc.remove([a_champion.x, a_champion.y])
                 # if I have enough space on the item bench for the number of items needed
-                if not self.item_bench_full(a_champion.num_items):
+                if not self.item_bench_full(a_champion.num_items) and not 'salvage_bin' in self.augment_dict and not \
+                        a_champion.items[0] == 'thiefs_gloves':
                     # Each item in possession
                     for item in a_champion.items:
-                        if item in trait_items.values():
-                            a_champion.origin.pop(-1)
-                            self.update_team_tiers()
                         self.item_bench[self.item_bench_vacancy()] = item
                 # if there is only one or two spots left on the item_bench and thiefs_gloves is removed
-                elif not self.item_bench_full(1) and a_champion.items[0] == "thiefs_gloves":
+                elif not self.item_bench_full(1) and a_champion.items[0] == "thiefs_gloves" and not 'salvage_bin' in self.augment_dict:
                     self.item_bench[self.item_bench_vacancy()] = a_champion.items[0]
+                elif 'salvage_bin' in self.augment_dict and a_champion.items[0] != 'thiefs_gloves':
+                    for item in a_champion.items:
+                        if item in list(item_builds.values()) and not self.item_bench_full(2):
+                            self.item_bench[self.item_bench_vacancy()] = item_builds[item][0]
+                            self.item_bench[self.item_bench_vacancy()] = item_builds[item][1]
+                        elif not self.item_bench_full(1):
+                            self.item_bench[self.item_bench_vacancy()] = item
+                elif 'salvage_bin' in self.augment_dict and a_champion.items[0] == 'thiefs_gloves':
+                    for _ in range(2):
+                        if not self.item_bench_full(1):
+                            self.item_bench[self.item_bench_vacancy()] = 'sparring_gloves'
                 else:
                     self.print("Could not remove item {} from champion {}".format(a_champion.items, a_champion.name))
                     return False
@@ -1048,7 +1107,7 @@ class player:
         for x in range(9):
             if self.bench[x]:
                 if self.bench[x].name == 'kayn':
-                    self.bench[x].kaynform = kayn_item
+                    self.bench[x].kayn_form = kayn_item
 
     def update_team_tiers(self):
         self.team_composition = origin_class.team_origin_class(self)

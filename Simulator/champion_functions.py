@@ -150,10 +150,8 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
 
         crit_string = ''  # bramble vest -item
         if crit_random < champion.crit_chance and 'bramble_vest' not in target.items:
-            if target.augments:
-                for x in range(len(target.augments)):
-                    if target.augments[x][0] == 'electrocharge':
-                        augment_functions.electrocharge(target.augments[x][1], champion.team)
+            if target.electrocharge != 0:
+                augment_functions.electrocharge(target.electrocharge, target)
             damage *= champion.crit_damage
             crit_string = ' crit'
 
@@ -170,6 +168,8 @@ def attack(champion, target, bonus_dmg=0, item_attack=False, trait_attack='', se
 
             if champion.lifesteal > 0:
                 champion.add_que('heal', -1, None, None, damage * champion.lifesteal)
+                if champion.celestial_blessing != 0 and champion.shield_amount() < champion.celestial_blessing:
+                    champion.add_que('shield', -1, None, None, damage * champion.lifesteal_spells)
 
             # if runaans_hurricane has killed the target before the actual attack finishes.
             # there's another check below but not going to touch that
@@ -296,7 +296,8 @@ def die(champion, killer):
         # Ran into a bug with this being removed. I'll look into where own_team is defined later
         if champion in champion.own_team():
             champion.own_team().remove(champion)
-        kill_functions(killer)
+        if killer is not None:
+            kill_functions(killer)
         champion.print(' dies ')
 
         # zzrot_portal

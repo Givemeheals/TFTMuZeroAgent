@@ -85,15 +85,18 @@ class pool:
 		championOptions = [None for _ in range(num)]
 		chosen = player.chosen
 		chosen_index = -1
+		high_end_shopping = 0
+		if 'high_end_shopping' in player.augment_dict:
+			high_end_shopping = 1
 		if not chosen:
 			if random.random() < .5:
 				chosen_index = random.randint(0, 4)
 		index = idx
 		for i in range(0, num):
 			if chosen_index != i:
-				percents = level_percentage[player.level]
+				percents = level_percentage[player.level + high_end_shopping]
 			else:
-				percents = chosen_stats[player.level]
+				percents = chosen_stats[player.level + high_end_shopping]
 			ranInt[i] = random.random()
 			if index == -1:
 				index = 0

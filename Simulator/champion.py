@@ -8,7 +8,7 @@ import random
 from math import ceil
 from Simulator.stats import AD, HEALTH, ARMOR, MR, AS, RANGE, MANA, MAXMANA, COST, MANALOCK, ABILITY_REQUIRES_TARGET, \
     DODGE, INITIATIVE_ACTIVE, ABILITY_LENGTH, DAMAGE_PER_UNIT
-from Simulator.augment_functions import start_of_battle_augments
+from Simulator.augment_functions import start_of_battle_augments, woodland_charm
 from Simulator.champion_functions import attack, die, MILLIS, MILLISECONDS_INCREASE, add_damage_dealt
 from Simulator import ability, active, field, item_stats, items
 
@@ -30,9 +30,9 @@ test_multiple = {'blue': 0, 'red': 0, 'bugged out': 0, 'draw': 0}
 
 class champion:
     def __init__(self, name, team=None, y=-1, x=-1, stars=1, itemlist=None, overlord=None,
-                 sandguard_overlord_coordinates=None, chosen=False, kayn_form=None, augments=[], team_tiers=None,
+                 sandguard_overlord_coordinates=None, chosen=False, kayn_form=None, team_tiers=None,
                  tome_of_traits=False, starting_y=-1, starting_x=-1, last_stand=None, target_dummy=False,
-                 round_num=None):
+                 round_num=None, augments=[]):
 
         if itemlist is None:
             itemlist = []
@@ -42,7 +42,8 @@ class champion:
         self.stars = stars
 
         # in case we're spawning a construct, galio or a turret, the rest are handled at the bottom of the object
-        if name != 'construct' and name != 'galio' and name != 'aphelios_turret' and name != 'target_dummy':
+        if name != 'construct' and name != 'galio' and name != 'aphelios_turret' and name != 'target_dummy' \
+                and name != 'tome_of_traits':
             self.health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.max_health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.AD = round(AD[name] * config.STARMULTIPLIER ** (stars - 1), 1)
@@ -100,12 +101,7 @@ class champion:
         self.team = team
         self.x = x
         self.y = y
-        # if y < 4:
-        #     self.starting_x = self.x
-        #     self.starting_y = self.y
-        # else:
-        #     self.starting_x = abs(x - 6)
-        #     self.starting_y = abs(y - 7)
+
         # Did this unit survive the last combat
         self.survive_combat = False
         # Did this unit participate in the last combat
@@ -146,6 +142,10 @@ class champion:
         self.combat_training = 0
         self.combat_training_iteration = 0
         self.jeweled_lotus = False
+        self.verdant_veil = 0
+        self.celestial_blessing = 0
+        self.ludens_echo = 0
+        self.electrocharge = 0
 
         if chosen: 
             self.health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
@@ -165,7 +165,7 @@ class champion:
         self.target_dummy = target_dummy
         self.round_num = round_num
 
-        if name != 'aphelios_turret':
+        if items and name != 'aphelios_turret' and name != 'tome_of_traits' and name != 'target_dummy':
             items.initiate(self)
 
         if name in INITIATIVE_ACTIVE:
@@ -189,18 +189,22 @@ class champion:
             self.AS = self.overlord.AS
 
         if name == 'target_dummy':
-            if round <= 8:
+            if self.round_num <= 8:
                 self.health = HEALTH[name][0]
                 self.max_health = HEALTH[name][0]
-            elif round <= 14:
+            elif self.round_num <= 14:
                 self.health = HEALTH[name][1]
                 self.max_health = HEALTH[name][1]
-            elif round <= 20:
+            elif self.round_num <= 20:
                 self.health = HEALTH[name][2]
                 self.max_health = HEALTH[name][2]
             else:
                 self.health = HEALTH[name][3]
                 self.max_health = HEALTH[name][3]
+            self.AD = 0
+        if self.name == 'tome_of_traits':
+            self.health = 0
+            self.max_health = 0
             self.AD = 0
 
     def attack(self, bonus_dmg=0, target=None, item_attack=False, trait_attack='', set_AD=None):
@@ -264,12 +268,11 @@ class champion:
 
             if not item_damage and not trait_damage:
                 damage = damage * target.spell_damage_reduction_percentage
-                for x in self.augments:
-                    if x[0] == 'ludens_echo':
-                        damage += x[1]
-                        enemies = field.enemies_in_distance(self, target.y, target.x, 2)
-                        if enemies:
-                            self.spell(self, enemies[0], x[1], 0, False, False, True)
+                if self.ludens_echo != 0:
+                    damage += self.ludens_echo
+                    enemies = field.enemies_in_distance(self, target.y, target.x, 2)
+                    if enemies:
+                        self.spell(enemies[0], self.ludens_echo, 0, False, False, True)
 
             if damage < 0:
                 damage = 0
@@ -310,6 +313,8 @@ class champion:
 
                 if self.lifesteal_spells > 0 and not item_damage:
                     self.add_que('heal', -1, None, None, damage * self.lifesteal_spells)
+                    if self.celestial_blessing != 0 and self.shield_amount() < self.celestial_blessing:
+                        self.add_que('shield', -1, None, None, damage * self.lifesteal_spells)
                 
                 add_damage_dealt(self, damage, target)
 
@@ -564,7 +569,8 @@ red = []
 # I want to keep things as simple as possible.
 def run(champion_q, player_1, player_2, round_damage=0):
     reset_global_variables()
-
+    blue_info = {}
+    red_info = {}
     for x in range(0, 7):
         for y in range(0, 4):
             if player_1.board[x][y]:
@@ -574,9 +580,9 @@ def run(champion_q, player_1, player_2, round_damage=0):
                                          int(player_1.board[x][y].overlord_coordinates[1])]
                 blue.append(champion_q(player_1.board[x][y].name, 'blue', y, x, player_1.board[x][y].stars,
                                        player_1.board[x][y].items, False, daddy_coordinates, player_1.board[x][y].chosen
-                                       , player_1.board[x][y].kayn_form, player_1.board[x][y].augments,
-                                       player_1.board[x][y].team_tiers, False, y, x,
-                                       player_1.last_stand_activated, player_1.round))
+                                       , player_1.board[x][y].kayn_form, player_1.board[x][y].team_tiers,
+                                       False, y, x, player_1.board[x][y].last_stand, player_1.board[x][y].target_dummy,
+                                       player_1.round, player_1.board[x][y].augments))
             if player_2.board[x][y]:
                 daddy_coordinates = False
                 if player_2.board[x][y].name == 'sandguard':
@@ -585,22 +591,25 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 # Inverting because the combat system uses the whole board and does not mirror at start.
                 red.append(champion_q(player_2.board[x][y].name, 'red', 7 - y, 6 - x, player_2.board[x][y].stars,
                                       player_2.board[x][y].items, False, daddy_coordinates, player_2.board[x][y].chosen,
-                                      player_2.board[x][y].kayn_form, player_2.board[x][y].augments,
-                                      player_2.board[x][y].team_tiers, False, 7 - y, 6 - x,
-                                      player_2.last_stand_activated, player_2.round))
+                                      player_2.board[x][y].kayn_form, player_2.board[x][y].team_tiers,
+                                      False,  y, x, player_2.board[x][y].last_stand, player_2.board[x][y].target_dummy,
+                                      player_2.round, player_2.board[x][y].augments))
 
     if len(blue) == 0 or len(red) == 0:
         if len(red) == 0 and len(blue) == 0:
             printt('DRAW')
-            return 0, round_damage
+            return 0, round_damage, blue_info, red_info
         elif len(red) == 0:
             printt('BLUE TEAM WON')
             survive_combat(player_1, blue)
-            return 1, round_damage + DAMAGE_PER_UNIT[len(blue)]
+            return 1, round_damage + DAMAGE_PER_UNIT[len(blue)], blue_info, red_info
         elif len(blue) == 0:
             printt('RED TEAM WON')
             survive_combat(player_2, red)
-            return 2, round_damage + DAMAGE_PER_UNIT[len(red)]
+            return 2, round_damage + DAMAGE_PER_UNIT[len(red)], blue_info, red_info
+
+    woodland_charm(player_1, blue)
+    woodland_charm(player_2, red)
 
     # Not quite sure what is happening in these lines. 
     # They are effects that happen at the start of the fight.
@@ -617,22 +626,18 @@ def run(champion_q, player_1, player_2, round_damage=0):
 
     origin_class.total_origin_class(blue[0], red[0])  # count and execute some traits
 
-    start_of_battle_augments(blue)
-    start_of_battle_augments(red)
-
-    blue_info = {}
-    red_info = {}
+    start_of_battle_augments(blue, red)
+    start_of_battle_augments(red, blue)
 
     origin_class.total_health(blue, red)
 
     # Not sure what changed the length of one of these arrays at this point but this seems to fix the issue
     if len(blue) == 0 or len(red) == 0:
-        return 0, round_damage
+        return 0, round_damage, blue_info, red_info
     items.infinity_edge(blue[0])
     # There appears to be some issue with infinity edge
     # infinity_edge made sure that the crit damage bonus gets registered after everything else has gone through
 
-    seconds_in = 0
     while True:
         if MILLIS() > 150000:
             test_multiple['bugged out'] += 1
@@ -786,8 +791,9 @@ def change_stat(a_champion, action, length, function, stat, value, data):
         a_champion.print(' {} {} --> {}'.format('AD', round(start_value, 2), round(a_champion.AD, 2)))
 
     else:
-        if not ('quicksilver' in a_champion.items and MILLIS() <= item_stats.item_change_length['quicksilver'] and
-                value and (stat == 'stunned' or stat == 'disarmed' or stat == 'blinded')):
+        if not ((('quicksilver' in a_champion.items and MILLIS() <= item_stats.item_change_length['quicksilver'])
+                or MILLIS() <= a_champion.verdant_veil) and value and
+                (stat == 'stunned' or stat == 'disarmed' or stat == 'blinded')):
             if not ('rapid_firecannon' in a_champion.items and value and stat == 'blinded'):
                 if not (a_champion.name == 'galio' and (MILLIS() - origin_class.galio_spawn_time[a_champion.team] <=
                                                         origin_class_stats.cc_immune['cultist'])
@@ -817,8 +823,8 @@ def change_stat(a_champion, action, length, function, stat, value, data):
                 a_champion.print(' not blinded because wears rapid firecannon')
         else:
             a_champion.print(' not {} because wears quicksilver'.format(stat))
-    if function:
-        a_champion.add_que('change_stat', length, stat, value, data)
+    if function and function[0] == 'cybernetic_uplink':
+        a_champion.add_que('change_stat', length + 1000, ['cybernetic_uplink', {}], stat, value, data)
 
 
 def reset_global_variables():
@@ -881,6 +887,6 @@ def reset_global_variables():
 
 def survive_combat(player, champ_list):
     for champ in champ_list:
+        print(champ.starting_x, champ.starting_y)
         if player.board[champ.starting_x][champ.starting_y]:
             player.board[champ.starting_x][champ.starting_y].survive_combat = True
-

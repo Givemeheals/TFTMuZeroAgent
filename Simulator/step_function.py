@@ -26,7 +26,7 @@ class Step_Function:
     def batch_2d_controller(self, actions, players, game_observations):
         rewards = []
         for i in range(config.NUM_PLAYERS):
-            if players[i] and players[i].afk == 0:
+            if players[i] and 'afk' not in players[i].augment_dict:
                 # Buy a shop unit
                 if actions[players[i].player_num][0] == 0:
                     if actions[players[i].player_num][1] == 0:
@@ -118,7 +118,8 @@ class Step_Function:
 
                 # Buy exp
                 elif actions[players[i].player_num][0] == 2:
-                    players[i].buy_exp()
+                    if 'march_of_progress' not in players[i].augment_dict:
+                        players[i].buy_exp()
 
                 # Move Item
                 elif actions[players[i].player_num][0] == 3:
@@ -263,7 +264,7 @@ class Step_Function:
 
         # buy Exp
         elif action == 2:
-            if player.buy_exp():
+            if 'march_of_progress' not in player.augment_dict and player.buy_exp():
                 pass
             else:
                 return self.shops, False, False, 1
@@ -559,7 +560,8 @@ class Step_Function:
                 game_observation.generate_shop_vector(self.shops[player.player_num])
 
         elif action == 2:
-            player.buy_exp()
+            if 'march_of_progress' not in player.augment_dict:
+                player.buy_exp()
 
         elif action == 3:
             player.action_vector = np.array([0, 0, 0, 1, 0, 0, 0, 0])

@@ -134,21 +134,21 @@ class Game_Round:
 
                     # Draw
                     if index_won == 0:
-                        players[num].loss_round(damage)
-                        players[num].health -= damage
-                        players[player_index].loss_round(damage)
-                        players[player_index].health -= damage
+                        players[num].loss_round(damage * players[num].damage_multiplier)
+                        players[num].health -= damage * players[num].damage_multiplier
+                        players[player_index].loss_round(damage * players[player_index].damage_multiplier)
+                        players[player_index].health -= damage * players[player_index].damage_multiplier
 
                     # Blue side won
                     if index_won == 1:
                         players[num].won_round(damage)
-                        players[player_index].loss_round(damage)
-                        players[player_index].health -= damage
+                        players[player_index].loss_round(damage * players[player_index].damage_multiplier)
+                        players[player_index].health -= damage * players[player_index].damage_multiplier
 
                     # Red side won
                     if index_won == 2:
-                        players[num].loss_round(damage)
-                        players[num].health -= damage
+                        players[num].loss_round(damage * players[num].damage_multiplier)
+                        players[num].health -= damage * players[num].damage_multiplier
                         players[player_index].won_round(damage)
                     players[player_index].combat = True
                     players[num].combat = True
@@ -166,9 +166,10 @@ class Game_Round:
                     players[num].start_time = time.time_ns()
                     config.WARLORD_WINS['blue'] = players[num].win_streak
                     config.WARLORD_WINS['red'] = player_copy.win_streak
-                    index_won, damage, blue_info = champion.run(champion.champion, players[num], player_copy,
+                    index_won, damage, blue_info, _ = champion.run(champion.champion, players[num], player_copy,
                                                      self.ROUND_DAMAGE[round_index][1])
                     after_round_updates(players[num], blue_info)
+
                     # if the alive player loses to a dead player, the dead player's reward is
                     # given out to all other alive players
                     alive = []
@@ -177,8 +178,8 @@ class Game_Round:
                             if other.health > 0 and other is not players[num]:
                                 alive.append(other)
                     if index_won == 2 or index_won == 0:
-                        players[num].health -= damage
-                        players[num].loss_round(player_round)
+                        players[num].health -= damage * players[num].damage_multiplier
+                        players[num].loss_round(player_round * players[num].damage_multiplier)
                         if len(alive) > 0:
                             for other in alive:
                                 other.won_round(damage/len(alive))
@@ -380,5 +381,7 @@ def after_round_updates(player, info):
     if info == {}:
         return True
     else:
+        print(list(info['combat_training'].keys()))
+        print(list(info['combat_training'].keys())[0][0], list(info['combat_training'].keys())[0][1])
         for x in list(info['combat_training'].keys()):
             player.board[x[0]][x[1]].combat_training = info['combat_training'][x]
