@@ -191,8 +191,6 @@ def thiefsGlovesTest():
     p1.add_to_bench(champ)
     p1.move_item(0, 0, -1)
     p1.start_round(5)
-    print(p1.thieves_gloves_loc)
-
 
 
 def kaynTests():
