@@ -367,7 +367,7 @@ def kill_functions(champion):
         champion.add_que('heal', -1, None, None, champion.thrill_of_the_hunt)
     if champion.axiom_arc != 0:
         champion.add_que('change_stat', -1, None, 'mana', champion.mana + champion.axiom_arc)
-    if champion.combat_training_iteration != 0:
+    if champion.combat_training_iteration != 0 and champion.overlord_coordinates is False:
         champion.combat_training += champion.combat_training_iteration
         champion.add_que('change_stat', -1, None, 'AD', champion.AD + champion.combat_training_iteration)
         champion.add_que('info_update', -1, None, 'combat_training', {tuple([champion.starting_x, champion.starting_y]):

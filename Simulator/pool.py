@@ -78,7 +78,7 @@ class pool:
 	# Index is the level of the champion you want to be sampled, -1 for random or to follow level.
 	# TO DO: Turn the cost arrays into a dictionary of dictionaries.
 	# Chosen is implemented as a string with the class being the possible one.
-	def sample(self, player, num, idx=-1):
+	def sample(self, player, num, idx=-1, allow_chosen=True):
 		# If player is None, for example they died, return an empty shop
 		if player is None:
 			return [" " for _ in range(num)]
@@ -89,7 +89,7 @@ class pool:
 		high_end_shopping = 0
 		if 'high_end_shopping' in player.augment_dict:
 			high_end_shopping = 1
-		if not chosen:
+		if not chosen and allow_chosen:
 			if random.random() < .5:
 				chosen_index = random.randint(0, 4)
 		index = idx

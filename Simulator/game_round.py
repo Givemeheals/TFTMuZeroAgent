@@ -370,7 +370,6 @@ def after_round_updates(player, info):
     if info == {}:
         return True
     else:
-        print(list(info['combat_training'].keys()))
-        print(list(info['combat_training'].keys())[0][0], list(info['combat_training'].keys())[0][1])
         for x in list(info['combat_training'].keys()):
-            player.board[x[0]][x[1]].combat_training = info['combat_training'][x]
+            if x[0] != -1 and x[1] != -1 and player.board[x[0]][x[1]]:
+                player.board[x[0]][x[1]].combat_training = info['combat_training'][x]

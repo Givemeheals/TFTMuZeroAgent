@@ -1136,7 +1136,7 @@ def leesin(champion):
         if champion.stars == 3:
             ttt = field.enemies_in_distance(champion, t.y, t.x, 1)
             for tt in ttt:
-                tt.die()
+                tt.die(champion)
         else:
 
             # if target is on a side
@@ -1278,10 +1278,10 @@ def leesin(champion):
                                 apply_attack_cooldown(champion, halved=False)
                                 break
                 else:
-                    champion.target.die()
+                    champion.target.die(champion)
 
             else:
-                champion.target.die()
+                champion.target.die(champion)
 
 
 # this was aids

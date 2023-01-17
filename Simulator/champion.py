@@ -23,7 +23,8 @@ def printt(msg):
 
 test_multiple = {'blue': 0, 'red': 0, 'bugged out': 0, 'draw': 0}
 
-# I am going to have to add cost information but that should be about it. 
+
+# I am going to have to add cost information but that should be about it.
 # When updating to the new patch,
 # there are going to be different edge cases but the core of the game should remain the same.
 
@@ -235,7 +236,7 @@ class champion:
         if self == target:
             enemy_team = self.team  # when ionic sparking themselves
 
-        if not ('trap_claw' in target.items and not item_damage and not burn_damage):  # trap_claw
+        if not ('trap_claw' in target.items and not item_damage and not burn_damage and not trait_damage):  # trap_claw
 
             if self.pumped_up:  # the_boss -trait
                 true_dmg += dmg
@@ -268,7 +269,7 @@ class champion:
             damage -= target.damage_reduction
             damage *= self.deal_increased_damage
 
-            if not item_damage:
+            if not item_damage and not burn_damage and not trait_damage:
                 damage = damage * target.spell_damage_reduction_percentage
                 if self.ludens_echo != 0:
                     damage += self.ludens_echo
@@ -313,7 +314,7 @@ class champion:
             # if the target has died to luden's, don't continue
             if target in eval(enemy_team):
 
-                if self.lifesteal_spells > 0 and not item_damage:
+                if self.lifesteal_spells > 0 and not item_damage and not burn_damage and not trait_damage:
                     self.add_que('heal', -1, None, None, damage * self.lifesteal_spells)
                     if self.celestial_blessing != 0 and self.shield_amount() < self.celestial_blessing:
                         self.add_que('shield', -1, None, None, damage * self.lifesteal_spells)
@@ -334,7 +335,7 @@ class champion:
                         else:
                             damage = 0
 
-                if not item_damage:
+                if not item_damage and not burn_damage and not trait_damage:
                     items.blue_buff(self)  # blue_buff
 
                 items.deathblade(self, target)  # deathblade
@@ -396,7 +397,7 @@ class champion:
 
     def die(self, killer):
         die(self, killer)
-        
+
         items.redemption(self)  # redemption - item
         items.frozen_heart(self)  # frozen_heart - item
         items.ionic_spark(self)  # ionic_spark - item
@@ -594,7 +595,7 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 red.append(champion_q(player_2.board[x][y].name, 'red', 7 - y, 6 - x, player_2.board[x][y].stars,
                                       player_2.board[x][y].items, False, daddy_coordinates, player_2.board[x][y].chosen,
                                       player_2.board[x][y].kayn_form, player_2.board[x][y].team_tiers,
-                                      False,  y, x, player_2.board[x][y].last_stand, player_2.board[x][y].target_dummy,
+                                      False, y, x, player_2.board[x][y].last_stand, player_2.board[x][y].target_dummy,
                                       player_2.round, player_2.board[x][y].augments))
 
     if len(blue) == 0 or len(red) == 0:
@@ -661,8 +662,6 @@ def run(champion_q, player_1, player_2, round_damage=0):
             if not o.target_dummy:
                 field.action(o)
 
-
-        
         while len(que) > 0 and MILLIS() > que[0][2]:
             champion_q = que[0][1]
             data = que[0][6]
@@ -798,7 +797,7 @@ def change_stat(a_champion, action, length, function, stat, value, data):
 
     else:
         if not ((('quicksilver' in a_champion.items and MILLIS() <= item_stats.item_change_length['quicksilver'])
-                or MILLIS() <= a_champion.verdant_veil) and value and
+                 or MILLIS() <= a_champion.verdant_veil) and value and
                 (stat == 'stunned' or stat == 'disarmed' or stat == 'blinded')):
             if not ('rapid_firecannon' in a_champion.items and value and stat == 'blinded'):
                 if not (a_champion.name == 'galio' and (MILLIS() - origin_class.galio_spawn_time[a_champion.team] <=
@@ -887,12 +886,12 @@ def reset_global_variables():
     origin_class.divine_list = []
     origin_class.elderwood_list = {'blue': 0, 'red': 0}
     origin_class.spirit_list = []
-    origin_class.duelist_helper_list = [] 
+    origin_class.duelist_helper_list = []
     origin_class.shade_helper_list = []
 
 
 def survive_combat(player, champ_list):
     for champ in champ_list:
-        print(champ.starting_x, champ.starting_y)
-        if player.board[champ.starting_x][champ.starting_y]:
+        if champ.starting_x != -1 and champ.starting_y != -1 and player.board[champ.starting_x][champ.starting_y] \
+                and champ.overlord_coordinates is False:
             player.board[champ.starting_x][champ.starting_y].survive_combat = True

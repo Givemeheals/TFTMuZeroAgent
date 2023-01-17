@@ -112,7 +112,7 @@ def reforgerTest():
     p1.add_to_item_bench('bf_sword')
     p1.add_to_item_bench('spatula')
     p1.add_to_item_bench('elderwood_heirloom')
-    p1.add_to_item_bench('thiefs_gloves')
+    p1.add_to_item_bench('thieves_gloves')
     p1.move_bench_to_board(0, 0, 0)
     p1.move_item(3, 0, 0)
     p1.move_item(4, 0, 0)
@@ -152,7 +152,7 @@ def thiefsGloveCombatTest():
     p2.max_units = 1
     p1.buy_champion(champion('nami'))
     p2.buy_champion(champion('nami'))
-    p1.add_to_item_bench('thiefs_gloves')
+    p1.add_to_item_bench('thieves_gloves')
     p2.add_to_item_bench('deathblade')
     p1.move_bench_to_board(0, 0, 0)
     p2.move_bench_to_board(0, 0, 0)
@@ -163,7 +163,7 @@ def thiefsGloveCombatTest():
     p1.move_item(0, 0, 0)
     assert p1.item_bench[0] == 'deathblade'
     c_object.run(c_object.champion, p1, p2)
-    assert p1.board[0][0].items[0] == 'thiefs_gloves'
+    assert p1.board[0][0].items[0] == 'thieves_gloves'
 
 def thiefsGlovesTest():
     p1 = setup()
@@ -171,20 +171,29 @@ def thiefsGlovesTest():
     p1.max_units = 1
     p1.buy_champion(champion('azir'))
     p1.buy_champion(champion('garen'))
-    p1.add_to_item_bench('thiefs_gloves')
+    for x in range(2):
+        p1.add_to_item_bench('thieves_gloves')
     p1.move_bench_to_board(0, 0, 0)
     p1.move_item(0, 0, 0)
-    assert p1.board[0][0].items[0] == 'thiefs_gloves'
+    assert p1.board[0][0].items[0] == 'thieves_gloves'
     for x in range(3):
         p1.start_round(x)
     p1.move_board_to_board(0, 0, 6, 3)
     p1.start_round(3)
     p1.move_board_to_bench(6, 3)
     p1.start_round(4)
+    p1.move_item(1, 1, -1)
     p1.sell_from_bench(0)
     p1.buy_champion(champion('azir'))
+    p1.buy_champion(champion('azir'))
+    p1.move_bench_to_board(0, 0, 0)
+    champ = champion(name='azir', itemlist=['thieves_gloves'])
+    p1.add_to_bench(champ)
     p1.move_item(0, 0, -1)
     p1.start_round(5)
+    print(p1.thieves_gloves_loc)
+
+
 
 def kaynTests():
     p1 = setup()

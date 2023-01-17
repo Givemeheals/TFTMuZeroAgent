@@ -1,7 +1,7 @@
 from Simulator.augment_stats import silver_augments, gold_augments, prismatic_augments
 from Simulator.stats import COST
 from Simulator import champion, field, origin_class
-from Simulator.item_stats import trait_items, starting_items, thiefs_gloves_items
+from Simulator.item_stats import trait_items, starting_items, thieves_gloves_items
 from Simulator.pool import pool
 from Simulator.pool_stats import cost_star_values
 import random
@@ -34,22 +34,20 @@ def augment_functions(player, augment):
         for _ in range(augment.values()):
             player.add_to_bench(champion.champion('tome_of_traits', tome_of_traits=True))
     elif 'band_of_thieves' == augment.keys():
-        if not player.item_bench_full(augment['band_of_thieves']):
-            for i in range(augment['band_of_thieves']):
-                player.item_bench[player.item_bench_vacancy()] = 'thiefs_gloves'
+        for i in range(augment['band_of_thieves']):
+            player.add_to_item_bench('thieves_gloves')
     elif 'consistency' == augment.keys():
         player.consistency = augment['consistency']
     elif 'component_grab_bag' == augment.keys():
-        if not player.item_bench_full(augment['component_grab_bag']):
-            for _ in range(augment['component_grab_bag']):
-                r = random.randint(0, len(starting_items) - 1)
-                player.item_bench[player.item_bench_vacancy()] = starting_items[r]
+        for _ in range(augment['component_grab_bag']):
+            r = random.randint(0, len(starting_items) - 1)
+            player.add_to_item_bench(starting_items[r])
     elif 'cursed_crown' == augment.keys():
         player.damage_multiplier = 2
         player.max_units += augment['cursed_crown']
     elif 'future_sight' == augment.keys():
         player.future_sight = True
-        if not player.item_bench_full(augment['future_sight']):
+        for x in range(augment.values()):
             for i in range(augment['future_sight'] - 1):
                 player.item_bench[player.item_bench_vacancy()] = 'zephyr'
     elif 'high_roller' == augment.keys():
@@ -89,28 +87,30 @@ def augment_functions(player, augment):
         player.free_refreshes += augment.values()
     elif 'threes_company' == augment.keys():
         for _ in range(augment['threes_company']):
-            if not player.bench_full():
-                player.bench[player.bench_vacancy()] = pool.sample(player, 1, 2)[0]
+            temp_name = pool.sample(player, 1, 2, False)[0]
+            champion.champion(name=temp_name, stars=2, kayn_form=player.kayn_form,
+                              last_stand=player.last_stand_activated, round_num=player.round)
     elif 'tiny_titans' == augment.keys():
         player.max_health += augment['tiny_titans']
         player.health += augment['tiny_titans']
     elif 'true_twos' == augment.keys():
         if not player.bench_full():
-            temp_slot = player.bench_vacancy()
-            player.bench[temp_slot] = pool.sample(player, 1, augment['true_twos'][0] - 1)[0]
-            player.bench[temp_slot].stars = 2
+            temp_name = pool.sample(player, 1, augment['true_twos'][0] - 1, False)[0]
+            champ1 = champion.champion(name=temp_name, stars=2, kayn_form=player.kayn_form,
+                             last_stand=player.last_stand_activated, round_num=player.round)
+            player.add_to_bench(champ1)
         if not player.bench_full():
-            temp_slot = player.bench_vacancy()
-            player.bench[temp_slot] = pool.sample(player, 1, augment['true_twos'][1] - 1)[0]
-            player.bench[temp_slot].stars = 2
+            temp_name = pool.sample(player, 1, augment['true_twos'][1] - 1, False)[0]
+            champ2 = champion.champion(name=temp_name, stars=2, kayn_form=player.kayn_form,
+                             last_stand=player.last_stand_activated, round_num=player.round)
+            player.add_to_bench(champ2)
     elif 'urfs_grab_bag' == augment.keys():
         for x in range(augment.values()):
-            if not player.item_bench_full(1):
-                if x == 0:
-                    player.item_bench[player.item_bench_vacancy()] = 'spatula'
-                else:
-                    r = random.randint(0, len(starting_items) - 1)
-                    player.item_bench[player.item_bench_vacancy()] = starting_items[r]
+            if x == 0:
+                player.add_to_item_bench('spatula')
+            else:
+                r = random.randint(0, len(starting_items) - 1)
+                player.add_to_item_bench(starting_items[r])
     elif 'windfall' == augment.keys():
         if player.round == 3:
             player.gold += augment['windfall'][0]
@@ -121,9 +121,8 @@ def augment_functions(player, augment):
 
 
 def give_random_item(player):
-    if not player.item_bench_full(1):
-        r = random.randint(0, len(thiefs_gloves_items) - 1)
-        player.item_bench[player.item_bench_vacancy()] = thiefs_gloves_items[r]
+    r = random.randint(0, len(thieves_gloves_items) - 1)
+    player.add_to_item_bench(thieves_gloves_items[r])
 
 
 def start_of_battle_augments(team, enemy):
@@ -150,11 +149,11 @@ def start_of_battle_augments(team, enemy):
             elif team[0].augments[x][0] == 'binary_airdrop':
                 for champ in team:
                     if len(champ.items) == 2:
-                        r = random.randint(0, len(thiefs_gloves_items) - 1)
-                        champ.items.append(thiefs_gloves_items[r])
+                        r = random.randint(0, len(thieves_gloves_items) - 1)
+                        champ.items.append(thieves_gloves_items[r])
             elif team[0].augments[x][0] == 'blue_battery':
                 for champ in team:
-                    champ.SP = team[0].augments[x][1][0]
+                    champ.SP += team[0].augments[x][1][0]
                     champ.blue_battery = team[0].augments[x][1][1]
             elif team[0].augments[x][0] == 'built_different':
                 for champ in team:
@@ -291,8 +290,7 @@ def start_of_round_augments(player):
         if player.health + player.augment_dict['cruel_pact'][1] <= player.max_health:
             player.health += player.augment_dict['cruel_pact'][1]
     if 'living_forge' in player.augment_dict and player.round in player.augment_dict['living_forge']:
-        if not player.item_bench_full(1):
-            player.item_bench[player.item_bench_vacancy()] = 'infinity_force'
+        player.add_to_item_bench('infinity_force')
     if 'metabolic_accelerator' in player.augment_dict:
         if player.health + player.augment_dict['metabolic_accelerator'] <= player.max_health:
             player.health += player.augment_dict['metabolic_accelerator']
@@ -338,21 +336,23 @@ def pandoras_bench_funct(player):
         if player.bench[slot]:
             temp_star = player.bench[slot].stars
             temp_cost = player.bench[slot].cost
+            temp_items = player.bench[slot].items
             player.sell_from_bench(slot, golden=False)
             player.gold -= cost_star_values[temp_cost - 1][temp_star - 1]
-            name = player.pool_obj.sample(player, 1, temp_cost - 1)[0]
-            player.bench[slot] = champion.champion(name, itemlist=[], augments=player.augments,
+            name = player.pool_obj.sample(player, 1, temp_cost - 1, False)[0]
+            champ = champion.champion(name, itemlist=temp_items, augments=player.augments,
                                     kayn_form=player.kayn_form, last_stand=player.last_stand_activated,
                                     round_num=player.round, stars=temp_star)
+            player.add_to_bench(champ)
 def pandoras_items_funct(player):
     for item in range(len(player.item_bench)):
         if player.item_bench[item]:
-            if player.item_bench[item] in thiefs_gloves_items:
-                r = random.randint(0, len(thiefs_gloves_items))
-                if r == len(thiefs_gloves_items):
-                    player.item_bench[item] = 'thiefs_gloves'
+            if player.item_bench[item] in thieves_gloves_items:
+                r = random.randint(0, len(thieves_gloves_items))
+                if r == len(thieves_gloves_items):
+                    player.item_bench[item] = 'thieves_gloves'
                 else:
-                    player.item_bench[item] = thiefs_gloves_items[r]
+                    player.item_bench[item] = thieves_gloves_items[r]
             elif player.item_bench[item] in trait_items:
                 r = random.randint(0, len(list(trait_items.values())) - 1)
                 player.item_bench[item] = list(trait_items.values())[r]
@@ -362,8 +362,7 @@ def pandoras_items_funct(player):
 
 
 def portable_forge(player):
-    if not player.item_bench_full(player):
-        player.item_bench[player.item_bench_vacancy(player)] = 'infinity_force'
+    player.add_to_item_bench('infinity_force')
 
 
 def preparation(player):
@@ -383,10 +382,14 @@ def recombobulate(player):
             if player.board[x][y]:
                 temp_star = player.board[x][y].stars
                 temp_cost = player.board[x][y].cost
+                temp_items = player.board[x][y].items
                 player.sell_champion(player.board[x][y], False, False)
                 player.gold -= cost_star_values[temp_cost - 1][temp_star - 1]
-                player.board[x][y] = pool.sample(player, 1, player.board[x][y].cost)[0]
-                player.board[x][y].stars = temp_star
+                name = player.pool_obj.sample(player, 1, temp_cost, False)[0]
+                player.board[x][y] = champion.champion(name, itemlist=temp_items, augments=player.augments,
+                                                       kayn_form=player.kayn_form,
+                                                       last_stand=player.last_stand_activated,
+                                                       round_num=player.round, stars=temp_star)
 
 
 def second_wind(a_champion, value):
@@ -408,7 +411,7 @@ def woodland_charm(player, team):
                 if not player.board[hexes[x][1]][hexes[x][0]]:
                     team.append(champion.champion(biggest_champ.name, biggest_champ.team, hexes[x][0], hexes[x][1],
                                                   biggest_champ.stars, None, False, None, False, biggest_champ.kayn_form
-                                                  , biggest_champ.team_tiers, False, hexes[x][0], hexes[x][1],
+                                                  , biggest_champ.team_tiers, False, -1, -1,
                                                   biggest_champ.last_stand, biggest_champ.round_num,
                                                   biggest_champ.augments))
                     team[-1].health *= player.augment_dict['woodland_charm']
