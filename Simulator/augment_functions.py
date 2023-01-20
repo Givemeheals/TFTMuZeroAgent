@@ -1,4 +1,5 @@
-from Simulator.augment_stats import silver_augments, gold_augments, prismatic_augments
+from Simulator.augment_stats import silver_augments, gold_augments, prismatic_augments, first_augment_restrictions, \
+    second_augment_restrictions, third_augment_restrictions
 from Simulator.stats import COST
 from Simulator import champion, field, origin_class
 from Simulator.item_stats import trait_items, starting_items, thieves_gloves_items
@@ -7,46 +8,60 @@ from Simulator.pool_stats import cost_star_values
 import random
 
 
-def augment_choice():
-    r1 = random.randint(0, 2)
-    if r1 == 0:
-        augment_tier = silver_augments
-    elif r1 == 1:
-        augment_tier = gold_augments
+def augment_choice(player, augment_tier, augment_round):
+    past_options = []
+    if augment_round == 1:
+        augment_restrictions = first_augment_restrictions
+    elif augment_round == 2:
+        augment_restrictions = second_augment_restrictions
     else:
-        augment_tier = prismatic_augments
+        augment_restrictions = third_augment_restrictions
+    for x in range(len(player.past_options)):
+        if player.past_options[0] == augment_tier:
+            for y in range(1, 4):
+                past_options.append(player.past_options[y])
     r2 = random.randint(0, len(augment_tier) - 1)
+    while list(augment_tier.keys())[r2] in past_options or list(augment_tier.keys())[r2] in augment_restrictions:
+        r2 = random.randint(0, len(augment_tier) - 1)
     r3 = random.randint(0, len(augment_tier) - 1)
-    while r3 == r2:
+    while r3 == r2 or list(augment_tier.keys())[r3] in past_options or list(augment_tier.keys())[r3] in \
+            augment_restrictions:
         r3 = random.randint(0, len(augment_tier) - 1)
     r4 = random.randint(0, len(augment_tier) - 1)
-    while r4 == r2 or r4 == r3:
+    while r4 == r2 or r4 == r3 or list(augment_tier.keys())[r4] in past_options or list(augment_tier.keys())[r3] in \
+            augment_restrictions:
         r4 = random.randint(0, len(augment_tier) - 1)
     option1 = list(augment_tier.keys())[r2]
     option2 = list(augment_tier.keys())[r3]
     option3 = list(augment_tier.keys())[r4]
+    player.past_options.append([augment_tier, option1, option2, option3])
     return [{option1: augment_tier[option1]}, {option2: augment_tier[option2]},
             {option3: augment_tier[option3]}]
 
 
+# these are augments that only happen once
 def augment_functions(player, augment):
     if 'ancient_archives' == augment.keys():
         for _ in range(augment.values()):
             player.add_to_bench(champion.champion('tome_of_traits', tome_of_traits=True))
+        player.augment_dict.popitem()
     elif 'band_of_thieves' == augment.keys():
         for i in range(augment['band_of_thieves']):
             player.add_to_item_bench('thieves_gloves')
+        player.augment_dict.popitem()
     elif 'consistency' == augment.keys():
         player.consistency = augment['consistency']
+        player.augment_dict.popitem()
     elif 'component_grab_bag' == augment.keys():
         for _ in range(augment['component_grab_bag']):
             r = random.randint(0, len(starting_items) - 1)
             player.add_to_item_bench(starting_items[r])
+        player.augment_dict.popitem()
     elif 'cursed_crown' == augment.keys():
         player.damage_multiplier = 2
         player.max_units += augment['cursed_crown']
+        player.augment_dict.popitem()
     elif 'future_sight' == augment.keys():
-        player.future_sight = True
         for x in range(augment.values()):
             for i in range(augment['future_sight'] - 1):
                 player.item_bench[player.item_bench_vacancy()] = 'zephyr'
@@ -54,11 +69,14 @@ def augment_functions(player, augment):
         for _ in range(augment.values()):
             if not player.item_bench_full(1):
                 player.item_bench[player.item_bench_vacancy()] = 'champion_duplicator'
+        player.augment_dict.popitem()
     elif 'item_grab_bag' == augment.keys():
         for _ in range(augment['item_grab_bag']):
             give_random_item(player)
+        player.augment_dict.popitem()
     elif 'new_recruit' == augment.keys():
         player.max_units += 1
+        player.augment_dict.popitem()
     elif 'phony_frontline' == augment.keys():
         dummy_added = 0
         x = 6
@@ -71,39 +89,49 @@ def augment_functions(player, augment):
             if x == -1:
                 x = 6
                 y -= 1
+        player.augment_dict.popitem()
     elif 'portable_forge' == augment.keys():
         portable_forge(player)
+        player.augment_dict.popitem()
     elif 'radiant_relics' == augment.keys():
         for _ in range(2):
             give_random_item(player)
+        player.augment_dict.popitem()
     elif 'recombobulator' == augment.keys():
         recombobulate(player)
+        player.augment_dict.popitem()
     elif 'rich_get_richer' == augment.keys():
         player.interest = augment['rich_get_richer'][0]
         player.gold += augment['rich_get_richer'][1]
+        player.augment_dict.popitem()
     elif 'salvage_bin' == augment.keys():
         give_random_item(player)
     elif 'think_fast' == augment.keys():
         player.free_refreshes += augment.values()
+        player.augment_dict.popitem()
     elif 'threes_company' == augment.keys():
         for _ in range(augment['threes_company']):
             temp_name = pool.sample(player, 1, 2, False)[0]
             champion.champion(name=temp_name, stars=2, kayn_form=player.kayn_form,
                               last_stand=player.last_stand_activated, round_num=player.round)
+        player.augment_dict.popitem()
     elif 'tiny_titans' == augment.keys():
         player.max_health += augment['tiny_titans']
         player.health += augment['tiny_titans']
+        player.augment_dict.popitem()
     elif 'true_twos' == augment.keys():
         if not player.bench_full():
             temp_name = pool.sample(player, 1, augment['true_twos'][0] - 1, False)[0]
             champ1 = champion.champion(name=temp_name, stars=2, kayn_form=player.kayn_form,
                              last_stand=player.last_stand_activated, round_num=player.round)
             player.add_to_bench(champ1)
+            player.augment_dict.popitem()
         if not player.bench_full():
             temp_name = pool.sample(player, 1, augment['true_twos'][1] - 1, False)[0]
             champ2 = champion.champion(name=temp_name, stars=2, kayn_form=player.kayn_form,
                              last_stand=player.last_stand_activated, round_num=player.round)
             player.add_to_bench(champ2)
+            player.augment_dict.popitem()
     elif 'urfs_grab_bag' == augment.keys():
         for x in range(augment.values()):
             if x == 0:
@@ -111,6 +139,7 @@ def augment_functions(player, augment):
             else:
                 r = random.randint(0, len(starting_items) - 1)
                 player.add_to_item_bench(starting_items[r])
+        player.augment_dict.popitem()
     elif 'windfall' == augment.keys():
         if player.round == 3:
             player.gold += augment['windfall'][0]
@@ -118,6 +147,7 @@ def augment_functions(player, augment):
             player.gold += augment['windfall'][1]
         if player.round == 16:
             player.gold += augment['windfall'][2]
+        player.augment_dict.popitem()
 
 
 def give_random_item(player):
@@ -125,6 +155,7 @@ def give_random_item(player):
     player.add_to_item_bench(thieves_gloves_items[r])
 
 
+# these are augments that affect the battle, either directly or through stats before the battle starts
 def start_of_battle_augments(team, enemy):
     if team and len(team[0].augments) > 0:
         for x in range(len(team[0].augments)):
@@ -273,6 +304,7 @@ def start_of_battle_augments(team, enemy):
                     champ.AS *= team[0].augments[x][1][1]
 
 
+# these are augments that are ongoing throughout the game and need to be checked every round
 def start_of_round_augments(player):
     if 'afk' in player.augment_dict:
         player.afk_turn_count += 1
@@ -344,6 +376,8 @@ def pandoras_bench_funct(player):
                                     kayn_form=player.kayn_form, last_stand=player.last_stand_activated,
                                     round_num=player.round, stars=temp_star)
             player.add_to_bench(champ)
+
+
 def pandoras_items_funct(player):
     for item in range(len(player.item_bench)):
         if player.item_bench[item]:
@@ -401,14 +435,17 @@ def woodland_charm(player, team):
     if 'woodland_charm' in player.augment_dict:
         most_health = 0
         biggest_champ = None
+        # find the champ with the highest health
         for champ in team:
             if champ.health > most_health:
                 most_health = champ.health
                 biggest_champ = champ
+        # find an open hex
         hexes = field.hexes_distance_away(biggest_champ.x, biggest_champ.y, 1, False)
         for x in range(len(hexes)):
             if hexes[x][0] <= 3:
                 if not player.board[hexes[x][1]][hexes[x][0]]:
+                    # copy the champion
                     team.append(champion.champion(biggest_champ.name, biggest_champ.team, hexes[x][0], hexes[x][1],
                                                   biggest_champ.stars, None, False, None, False, biggest_champ.kayn_form
                                                   , biggest_champ.team_tiers, False, -1, -1,

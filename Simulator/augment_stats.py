@@ -116,3 +116,61 @@ prismatic_augments = {
     'wise_spending':        2,          # exp per shop refresh
     'woodland_charm':       1           # clone health multiplier
 }
+
+first_augment_restrictions = [
+    'big_friend',
+    'component_grab_bag',
+    'golden_egg',
+    'high_end_shoppin',
+    'last_stand',
+    'lategame_specialist',
+    'recombobulator',
+    'stand_united',
+    'the_golden_egg',
+    'think_fast',
+    'verdant_veil'
+]
+
+second_augment_restrictions = [
+    'afk',
+    'birthday_present',
+    'calculated_loss',
+    'clear_mind',
+    'cluttered_mind',
+    'combat_training',
+    'consistency',
+    'cruel_pact',
+    'cursed_crown',
+    'hustler',
+    'living_forge',
+    'march_of_progress',
+    'metabolic_accelerator',
+    'the_golden_egg',
+    'threes_company',
+    'true_twos'
+]
+
+third_augment_restrictions = [
+    'afk',
+    'birthday_present',
+    'built_different',
+    'calculated_loss',
+    'clear_mind',
+    'cluttered_mind',
+    'combat_training',
+    'consistency',
+    'cruel_pact',
+    'cursed_crown',
+    'double_trouble',
+    'electrocharge',
+    'hustler',
+    'living_forge',
+    'ludens_echo',
+    'march_of_progress',
+    'metabolic_accelerator',
+    'preparation',
+    'threes_company',
+    'tiny_titans',
+    'true_twos',
+    'wise_spending'
+]

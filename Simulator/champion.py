@@ -269,6 +269,7 @@ class champion:
             damage -= target.damage_reduction
             damage *= self.deal_increased_damage
 
+            # ludens_echo augment
             if not item_damage and not burn_damage and not trait_damage:
                 damage = damage * target.spell_damage_reduction_percentage
                 if self.ludens_echo != 0:
@@ -592,6 +593,7 @@ def run(champion_q, player_1, player_2, round_damage=0):
                     daddy_coordinates = [6 - int(player_2.board[x][y].overlord_coordinates[0]),
                                          int(7 - player_2.board[x][y].overlord_coordinates[1])]
                 # Inverting because the combat system uses the whole board and does not mirror at start.
+                # starting_x and starting_y do not get inverted
                 red.append(champion_q(player_2.board[x][y].name, 'red', 7 - y, 6 - x, player_2.board[x][y].stars,
                                       player_2.board[x][y].items, False, daddy_coordinates, player_2.board[x][y].chosen,
                                       player_2.board[x][y].kayn_form, player_2.board[x][y].team_tiers,
@@ -614,9 +616,9 @@ def run(champion_q, player_1, player_2, round_damage=0):
     woodland_charm(player_1, blue)
     woodland_charm(player_2, red)
 
-    # Not quite sure what is happening in these lines. 
-    # They are effects that happen at the start of the fight.
-    # But blue[0] feels odd
+    # These are effects that happen at the start of the fight.
+    # even though blue[0] is the only thing passed into the methods
+    # all of them check both teams for said effects
     items.chalice_of_power(blue[0])  # chalice_of_power
     items.zekes_herald(blue[0])  # zekes_herald
     items.frozen_heart(blue[0])  # frozen_heart
@@ -715,6 +717,7 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 if que[0][0] == 'kill':
                     que[0][5].die(None)
 
+                # Info is used for information that the player needs that happens during the fight
                 if que[0][0] == 'info_update':
                     if champion_q.team == 'blue':
                         if que[0][4] not in list(blue_info.keys()):
@@ -722,10 +725,10 @@ def run(champion_q, player_1, player_2, round_damage=0):
                         else:
                             blue_info[que[0][4]].update(que[0][5])
                     elif champion_q.team == 'red':
-                        if que[0][4] not in list(blue_info.keys()):
-                            blue_info.update({que[0][4]: que[0][5]})
+                        if que[0][4] not in list(red_info.keys()):
+                            red_info.update({que[0][4]: que[0][5]})
                         else:
-                            blue_info[que[0][4]].update(que[0][5])
+                            red_info[que[0][4]].update(que[0][5])
             que.pop(0)
 
         MILLISECONDS_INCREASE()
@@ -828,7 +831,7 @@ def change_stat(a_champion, action, length, function, stat, value, data):
                 a_champion.print(' not blinded because wears rapid firecannon')
         else:
             a_champion.print(' not {} because wears quicksilver'.format(stat))
-    if function and function[0] == 'cybernetic_uplink':
+    if function and function[0] == 'cybernetic_uplink':     # function is used for repeated actions
         a_champion.add_que('change_stat', length + 1000, ['cybernetic_uplink', {}], stat, value, data)
 
 

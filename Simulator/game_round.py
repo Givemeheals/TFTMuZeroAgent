@@ -6,6 +6,8 @@ from Simulator import champion, pool_stats, minion
 from Simulator.item_stats import item_builds as full_items, starting_items
 from Simulator.player import player as player_class
 from Simulator.champion_functions import MILLIS
+from Simulator.augment_stats import silver_augments, gold_augments, prismatic_augments
+from Simulator.augment_functions import augment_choice, augment_functions
 
 
 class Game_Round:
@@ -26,12 +28,15 @@ class Game_Round:
         self.NUM_DEAD = 0
         self.current_round = 0
 
+        self.augment_num = 1
+
         log_to_file_start()
 
         self.game_rounds = [
             self.round_1,
             self.minion_round,
             self.minion_round,
+            self.augment_round,
             self.combat_round,
             self.combat_round,
             self.combat_round,
@@ -40,6 +45,7 @@ class Game_Round:
             self.combat_round,
             self.minion_round,
             self.combat_round,
+            self.augment_round,
             self.combat_round,
             self.combat_round,
             self.carousel3_4,
@@ -47,6 +53,7 @@ class Game_Round:
             self.combat_round,
             self.minion_round,
             self.combat_round,
+            self.augment_round,
             self.combat_round,
             self.combat_round,
             self.carousel4_4,
@@ -323,6 +330,40 @@ class Game_Round:
 
     def update_players(self, players):
         self.PLAYERS = players
+
+    def augment_round(self):
+        for player in self.PLAYERS.values():
+            if player:
+                log_to_file(player)
+        log_end_turn(self.current_round)
+        r1 = random.randint(0, 2)
+        if r1 == 0:
+            augment_tier = silver_augments
+        elif r1 == 1:
+            augment_tier = gold_augments
+        else:
+            augment_tier = prismatic_augments
+        for player in self.PLAYERS.values():
+            if player:
+                self.decide_augment(player, augment_tier, self.augment_num)
+        self.augment_num += 1
+
+
+    def decide_augment(self, player, augment_tier, augment_num):
+        options = augment_choice(player, augment_tier, augment_num)
+        new_augment = options[0]
+        key = list(new_augment.keys())
+        value = list(new_augment.values())
+        player.augments.append([key[0], value[0]])
+        player.augment_dict.update(new_augment)
+        for x in range(7):
+            for y in range(4):
+                if player.board[x][y]:
+                    player.board[x][y].augments = player.augments
+        for x in range(9):
+            if player.bench[x]:
+                player.bench[x].augments = player.augments
+        augment_functions(player, new_augment)
 
 
 def log_to_file_start():

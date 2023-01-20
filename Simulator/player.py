@@ -131,9 +131,9 @@ class player:
 
         self.augments = []
         self.augment_dict = {}
+        self.past_options = []
         self.afk_turn_count = 0
         self.consistency = 1
-        self.future_sight = False
         self.free_refreshes = 0
         self.last_stand_activated = False
         self.max_interest = 5
@@ -242,21 +242,6 @@ class player:
                 self.print(str(self.mistake_reward) + ' reward for attempting to kill itself with cruel pact')
                 return False
 
-    def decide_augment(self):
-        options = augment_choice()
-        new_augment = options[0]
-        key = list(new_augment.keys())
-        value = list(new_augment.values())
-        self.augments.append([key[0], value[0]])
-        self.augment_dict.update(new_augment)
-        for x in range(7):
-            for y in range(4):
-                if self.board[x][y]:
-                    self.board[x][y].augments = self.augments
-        for x in range(9):
-            if self.bench[x]:
-                self.bench[x].augments = self.augments
-        augment_functions(self, new_augment)
 
     def decide_vector_generation(self, x):
         if x:
@@ -1231,8 +1216,6 @@ class player:
         self.reward += self.num_units_in_play * self.minion_count_reward
         start_of_round_augments(self)
         # self.print(str(self.num_units_in_play * self.minion_count_reward) + " reward for minions in play")
-        if self.round == 3 or self.round == 10 or self.round == 16:
-            self.decide_augment()
         self.gold_income(self.round)
         self.generate_player_vector()
         if self.kayn_check():
