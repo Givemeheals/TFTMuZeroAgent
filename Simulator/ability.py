@@ -350,6 +350,9 @@ def cassiopeia(champion):
         if includes_all:
             line_end_point.append([f[0], f[1]])
 
+    if not line_end_point:
+        print("Someone figure out why cassiopeia is dying")
+        return
     line_end_point = line_end_point[0]
     # line_end_point = line_end_point[random.randint(0,len(line_end_point) - 1)]
 
@@ -560,6 +563,8 @@ def evelynn(champion):
     elif r > stats.ABILITY_TARGET_PROBABILITIES[champion.name][2]:
         targets = 2
 
+    if champion.target is None:
+        field.find_target(champion)
     target_y = champion.target.y
     target_x = champion.target.x
 
@@ -1057,8 +1062,11 @@ def kindred(champion):
 
     if not champion.target:
         field.find_target(champion)
-        champion.print(
-            ' has a new target: ' + '{:<8}'.format(champion.target.team) + '{:<8}'.format(champion.target.name))
+        if champion.target:
+            champion.print(
+                ' has a new target: ' + '{:<8}'.format(champion.target.team) + '{:<8}'.format(champion.target.name))
+        else:
+            return
 
     target = champion.target
     target_y = target.y
@@ -1100,6 +1108,8 @@ def leesin(champion):
     # draw a line from lee to target and continue it until it hits an edge
     if not champion.target:
         field.find_target(champion)
+        if champion.target is None:
+            return
     if len(champion.enemy_team()) > 0:
         line_to_wall_behind_target = field.rectangle_from_champion_to_wall_behind_target(champion, 1, champion.target.y,
                                                                                          champion.target.x)
@@ -1834,9 +1844,12 @@ def riven(champion):
                     two_from_n0 = field.hexes_distance_away(corner_neighbors[0][0], corner_neighbors[0][1], 2, True)
                     two_from_n1 = field.hexes_distance_away(corner_neighbors[1][0], corner_neighbors[1][1], 2, True)
                     two_away = list(set(map(tuple, two_from_champion)).intersection(set(map(tuple, two_from_n0))))
-                    two_away = list(set(map(tuple, two_away)).intersection(set(map(tuple, two_from_n1))))[0]
+                    two_away_list = list(set(map(tuple, two_away)).intersection(set(map(tuple, two_from_n1))))
+                    slash_hexes = []
+                    if len(two_away_list) > 0:
+                        two_away = two_away_list[0]
+                        slash_hexes = field.hexes_in_distance(two_away[0], two_away[1], 1)
 
-                    slash_hexes = field.hexes_in_distance(two_away[0], two_away[1], 1)
                     slash_hexes.append(corner_neighbors[0])
                     slash_hexes.append(corner_neighbors[1])
 
@@ -1976,7 +1989,9 @@ def sett(champion):
             # then the next two will be the secondary smash targets
             if two_away:
                 smash_targets.append([two_away[0][0], two_away[0][1]])
-            two_distance_neighbors = list(filter(lambda x: (x[0] != smash_targets[0]), two_distance_neighbors))
+                two_distance_neighbors = list(filter(lambda x: (x[0] != smash_targets[0]), two_distance_neighbors))
+            else:
+                two_distance_neighbors = list(filter(lambda x: (x[0]), two_distance_neighbors))
             smash_targets.append(two_distance_neighbors[0][0])
             if len(two_distance_neighbors) > 1:
                 smash_targets.append(two_distance_neighbors[1][0])
@@ -2593,8 +2608,9 @@ def yone(champion):
     coords = field.coordinates
 
     # Seal Fate
-    if (champion.maxmana == stats.MAXMANA[champion.name]):
-        if (not champion.target): field.find_target(champion)
+    if champion.maxmana == stats.MAXMANA[champion.name] and champion.target:
+        if not champion.target:
+            field.find_target(champion)
         path = field.rectangle_from_champion_to_wall_behind_target(champion, stats.ABILITY_RADIUS[champion.name],
                                                                    champion.target.y, champion.target.x)
         for i, p in enumerate(path):
@@ -2676,12 +2692,12 @@ def yone(champion):
         apply_attack_cooldown(champion)
 
     # Unforgotten
-    elif (champion.maxmana == stats.SECONDARY_MAXMANA[champion.name]):
+    elif champion.maxmana == stats.SECONDARY_MAXMANA[champion.name] and champion.target:
         # sort the marked enemies by hp and check their neighboring hexes
         # whichever has the first free hex, is going to be the dash target
         marked_enemies = []
         for y in yone_list:
-            if (y[0] == champion):
+            if y[0] == champion:
                 marked_enemies.append([y[1], y[1].health])
         marked_enemies = sorted(marked_enemies, key=lambda x: x[1])
 
@@ -2695,18 +2711,19 @@ def yone(champion):
             random.shuffle(neighbors)
             for n in neighbors:
                 c = coords[n[0]][n[1]]
-                if (not c):
+                if not c:
                     target = m[0]
                     dash_coordinate = n
                     break
-            if (target): break
+            if target:
+                break
 
-        if (target):
+        if target:
             damage = (target.max_health - target.health) * stats.ABILITY_MISSING_HEALTH_DAMAGE_PERCENTAGE[champion.name]
             damage += stats.ABILITY_SECONDARY_DMG[champion.name][champion.stars]
 
             distance = field.distance(champion, target, True)
-            if (distance > 1):
+            if distance > 1:
                 champion.print(' dashes')
                 champion.move(dash_coordinate[0], dash_coordinate[1], True)
             champion.spell(target, damage)
@@ -2751,6 +2768,10 @@ def yuumi(champion):
         allies.append([e, e.health / e.max_health])
 
     allies = sorted(allies, key=lambda x: x[1])
+    # If the allied already died. Should basically never need to return
+    if not allies:
+        print("some dead yummi allies. Should never really see this.")
+        return
     first_target = allies[0][0]
 
     # heal and change AS for the first target

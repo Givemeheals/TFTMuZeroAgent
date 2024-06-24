@@ -5,13 +5,13 @@ from Models.replay_muzero_buffer import ReplayBuffer
 from sklearn import preprocessing
 
 
-@ray.remote
+@ray.remote(num_gpus=config.BUFFER_GPU_SIZE, num_cpus=0.2)
 class BufferWrapper:
-    def __init__(self, global_buffer):
-        self.buffers = {"player_" + str(i): ReplayBuffer(global_buffer) for i in range(config.NUM_PLAYERS)}
+    def __init__(self):
+        self.buffers = {"player_" + str(i): ReplayBuffer() for i in range(config.NUM_PLAYERS)}
     
     def store_replay_buffer(self, key, *args):
-        self.buffers[key].store_replay_buffer(args[0], args[1], args[2], args[3])
+        self.buffers[key].store_replay_buffer(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7])
 
     def get_prev_action(self, key):
         self.buffers[key].get_prev_action()
@@ -21,6 +21,12 @@ class BufferWrapper:
     
     def set_reward_sequence(self, key, *args):
         self.buffers[key].set_reward_sequence(args[0])
+
+    def get_ending_position(self, key):
+        self.buffers[key].get_ending_position()
+
+    def set_ending_position(self, key, *args):
+        self.buffers[key].set_ending_position(args[0])
 
     def rewardNorm(self):
         reward_dat = []
@@ -46,7 +52,11 @@ class BufferWrapper:
             b.set_reward_sequence(reward_dat[index: index + rewardLens[i]])
             index += rewardLens[i]
     
-    def store_global_buffer(self):
+    def store_global_buffer(self, global_buffer):
         for b in self.buffers.values():
-            b.store_global_buffer()
+            b.store_global_buffer(global_buffer)
+
+    def reset_buffers(self):
+        self.buffers = {"player_" + str(i): ReplayBuffer() for i in range(config.NUM_PLAYERS)}
+        return True
     

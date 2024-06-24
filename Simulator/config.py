@@ -1,16 +1,21 @@
 import config
-from Simulator.item_stats import uncraftable_items
+from Simulator.item_stats import uncraftable_items, items
 
 CHAMPION_INFORMATION = 12
-BOARD_SIZE = 28
+BOARD_X = 7
+BOARD_Y = 4
+BOARD_SIZE = BOARD_X * BOARD_Y
 BENCH_SIZE = 9
-MAX_CHAMPION_IN_SET = 58
+SHOP_SIZE = 5
+ITEM_BENCH_SIZE = 10
+MAX_CHAMPION_IN_SET = 62
 UNCRAFTABLE_ITEM = len(uncraftable_items)
 MAX_BENCH_SPACE = 10
-CHAMP_ENCODING_SIZE = 26
+MAX_ITEMS_IN_SET = len(list(items.keys()))
+
 
 NUM_PLAYERS = config.NUM_PLAYERS
-LOG_COMBAT = config.LOG_COMBAT
+LOG_COMBAT = False
 
 PRINTMESSAGES = True
 LOGMESSAGES = True
@@ -41,3 +46,6 @@ LEAP_DELAY = 395  # assassins and shades
 MATCHMAKING_WEIGHTS = 10
 WEIGHTS_INCREMENT = 3
 
+CRIT_CHANCE = 0
+CRIT_DAMAGE = 1.5
+SP = 1

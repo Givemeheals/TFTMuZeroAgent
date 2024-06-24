@@ -4,7 +4,6 @@ from functools import wraps
 from time import time
 
 
-
 def champ_binary_encode(n):
     return list(np.unpackbits(np.array([n], np.uint8))[2:8])
 
@@ -49,9 +48,11 @@ def decode_action(str_actions):
     for str_action in str_actions:
         num_items = str_action.count("_")
         split_action = str_action.split("_")
-        element_list = [0, 0, 0]
+        element_list = []
         for i in range(num_items + 1):
-            element_list[i] = int(split_action[i])
+            element_list.append(int(split_action[i]))
+        while len(element_list) < 3:
+            element_list.append(0)
         actions.append(np.asarray(element_list))
     return np.asarray(actions)
 
@@ -60,4 +61,18 @@ def x_y_to_1d_coord(x1, y1):
     if y1 == -1:
         return x1 + 28
     else:
-        return 7 * y1 + x1
+        return x1 * 4 + y1
+
+def coord_to_x_y(dcord):
+    """ Calculates the 2 dimentional position from an index.
+
+    Args:
+        dcord (int): Index of the position.
+
+    Returns:
+        int: x coordinate of the position.
+        int: y coordinate of the position.
+    """
+    x = dcord // 4
+    y = dcord - (x * 4)
+    return x, y

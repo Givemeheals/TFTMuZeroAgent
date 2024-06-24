@@ -20,14 +20,15 @@ namespace tree {
             std::vector<CNode>* ptr_node_pool;
             // This is used to map the action from the 1d to the multi dim that the environment can use
             // I wish this could be a string vector but Cython does not support strings, only char *
-            std::vector<char*> mappings;
+            std::vector<std::string> mappings;
 
             CNode();
-            CNode(float prior, int action_num, std::vector<CNode> *ptr_node_pool);
+            CNode(float prior, std::vector<CNode> *ptr_node_pool);
             ~CNode();
 
             void expand(int hidden_state_index_x, int hidden_state_index_y, float reward,
-                        const std::vector<float> &policy_logits, const std::vector<char*> mappings);
+                        const std::vector<float> &policy_logits, const std::vector<char*> &mappings,
+                        int act_num);
             void add_exploration_noise(float exploration_fraction, const std::vector<float> &noises);
 
             int expanded();
@@ -42,21 +43,18 @@ namespace tree {
     class CRoots{
         public:
             int root_num, pool_size;
-            std::vector<int> action_num;
             std::vector<CNode> roots;
             std::vector<std::vector<CNode>> node_pools;
 
             CRoots();
-            CRoots(int root_num, std::vector<int> action_num, int pool_size);
+            CRoots(int root_num, int pool_size);
             ~CRoots();
 
             void prepare(float root_exploration_fraction, const std::vector<std::vector<float>> &noises,
                          const std::vector<float> &rewards, const std::vector<std::vector<float>> &policies,
-                         const std::vector<std::vector<char*>> &mappings);
-            void prepare_no_noise(const std::vector<float> &rewards,
-                                  const std::vector<std::vector<float>> &policies,
-                                  const std::vector<std::vector<char*>> &mappings);
-            void clear();
+                         const std::vector<std::vector<char*>> &mappings, const std::vector<int> &action_nums);
+            void prepare_no_noise(const std::vector<float> &rewards, const std::vector<std::vector<float>> &policies,
+                                  const std::vector<std::vector<char*>> &mappings, const std::vector<int> &action_nums);
             std::vector<std::vector<int>> get_distributions();
             std::vector<float> get_values();
 
@@ -78,14 +76,13 @@ namespace tree {
 
 
     //*********************************************************
-    std::vector<int> decode_action(char* &str_action);
-    std::vector<char*> create_default_mapping();
+    std::vector<int> decode_action(std::string& action);
     void cback_propagate(std::vector<CNode*> &search_path, tools::CMinMaxStats &min_max_stats, float value,
                          float discount);
     void cbatch_back_propagate(int hidden_state_index_x, float discount, const std::vector<float> &rewards,
                                const std::vector<float> &values, const std::vector<std::vector<float>> &policy,
                                tools::CMinMaxStatsList *min_max_stats_lst, CSearchResults &results,
-                               std::vector<std::vector<char*>> mappings);
+                               std::vector<std::vector<char*>> &mappings, const std::vector<int> &action_nums);
     int cselect_child(CNode* root, tools::CMinMaxStats &min_max_stats, int pb_c_base, float pb_c_init, float discount);
     float cucb_score(CNode *child, tools::CMinMaxStats &min_max_stats, float total_children_visit_counts,
                      float pb_c_base, float pb_c_init, float discount);

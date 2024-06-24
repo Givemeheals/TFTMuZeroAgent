@@ -1,7 +1,8 @@
+import config
 import Simulator.config as config
-import numpy as np
 from Simulator import champion
 from Simulator.loot_orb import LootOrb, gen_loot, gen_orb_reward, gen_orbs, give_loot
+
 
 # TODO
 # add better randomness to drops
@@ -13,11 +14,24 @@ from Simulator.loot_orb import LootOrb, gen_loot, gen_orb_reward, gen_orbs, give
 # These should function similar to player objects except simplified for minion combat
 class Minion:
     def __init__(self):
+        # Used in print statements
+        self.player_num = -1
         # array of champions, since order does not matter, can be unordered list
         self.bench = [None for _ in range(9)]
         # Champion array, this is a 7 by 4 array.
         self.board = [[None for _ in range(4)] for _ in range(7)]
         self.opponent = None
+
+        self.win_streak = 0
+
+        # Including this to allow for certain types of training to be viable.
+        self.reward = 0
+
+    def won_round(self, damage):
+        self.reward += damage
+
+    def loss_round(self, damage):
+        self.reward -= damage
 
 
 # Round 1 Minions
@@ -27,11 +41,13 @@ class Minion:
 class FirstMinion(Minion):
     def __init__(self):
         super().__init__()
+        self.player_num = -1
         self.board[2][1] = champion.champion('meleeminion')
         self.board[5][1] = champion.champion('meleeminion')
 
     def drop_loot(self, history):
-        choices = [LootOrb.UNCOMMON, LootOrb.COMMON, (LootOrb.COMMON, LootOrb.COMMON), (LootOrb.COMMON, LootOrb.UNCOMMON)]
+        choices = [LootOrb.UNCOMMON, LootOrb.COMMON, (LootOrb.COMMON, LootOrb.COMMON),
+                   (LootOrb.COMMON, LootOrb.UNCOMMON)]
         probabilities = [.45, .25, .15, .15]
         count = 1
         return gen_loot(choices, probabilities, count, history)
@@ -99,7 +115,6 @@ class ThirdMinion(Minion):
         else:
             # common == 2
             orbs += [LootOrb.COMMON, LootOrb.UNCOMMON]
-        
 
         history += orbs
 
@@ -264,7 +279,8 @@ def minion_combat(player, enemy, round, others):
     if index_won == 0:
         player.loss_round(damage)
         for p in alive:
-            p.won_ghost(damage/len(alive))
+            if p != player:
+                p.spill_reward(damage / len(alive))
         player.health -= damage
     # player wins!
     if index_won == 1:
@@ -274,7 +290,8 @@ def minion_combat(player, enemy, round, others):
     # minions win! (yikes)
     if index_won == 2:
         player.loss_round(damage)
+        player.health -= damage
         if len(alive) > 0:
             for p in alive:
-                p.won_ghost(damage/len(alive))
-        player.health -= damage
+                if p != player:
+                    p.spill_reward(damage / len(alive))

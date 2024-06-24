@@ -65,22 +65,20 @@ items = {
 
 
 uncraftable_items = [
-
-'bf_sword',
-'chain_vest',
-'giants_belt',
-'needlessly_large_rod',
-'negatron_cloak',
-'recurve_bow',
-'sparring_gloves',
-'spatula',
-'tear_of_the_goddess',
-'kayn_rhast',
-'kayn_shadowassassin',
-'champion_duplicator',
-'magnetic_remover',
-'reforger',
-
+    'bf_sword',
+    'chain_vest',
+    'giants_belt',
+    'needlessly_large_rod',
+    'negatron_cloak',
+    'recurve_bow',
+    'sparring_gloves',
+    'spatula',
+    'tear_of_the_goddess',
+    'kayn_rhast',
+    'kayn_shadowassassin',
+    'champion_duplicator',
+    'magnetic_remover',
+    'reforger',
 ]
 
 
@@ -327,4 +325,16 @@ starting_items = [
     'recurve_bow',
     'sparring_gloves',
     'tear_of_the_goddess',
+]
+
+offensive_items = [
+    'bf_sword',
+    'needlessly_large_rod',
+    'recurve_bow',
+]
+
+defensive_items = [
+    'chain_vest',
+    'giants_belt',
+    'negatron_cloak',
 ]

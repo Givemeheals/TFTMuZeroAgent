@@ -4,6 +4,7 @@ import Simulator.origin_class_stats as origin_class_stats
 import Simulator.champion_functions as champion_functions
 import time
 import random
+import itertools
 
 from math import ceil
 from Simulator.stats import AD, HEALTH, ARMOR, MR, AS, RANGE, MANA, MAXMANA, COST, MANALOCK, ABILITY_REQUIRES_TARGET, \
@@ -45,7 +46,7 @@ class champion:
             self.max_health = round(HEALTH[name] * config.STARMULTIPLIER ** (stars - 1), 1)
             self.AD = round(AD[name] * config.STARMULTIPLIER ** (stars - 1), 1)
 
-        self.SP = 1
+        self.SP = config.SP
 
         self.AS = AS[name]
         self.armor = ARMOR[name]
@@ -92,8 +93,8 @@ class champion:
         self.lifesteal = 0
         self.lifesteal_spells = 0
         self.healing_strength = 1
-        self.crit_chance = 0.25
-        self.crit_damage = 1.5
+        self.crit_chance = config.CRIT_CHANCE
+        self.crit_damage = config.CRIT_DAMAGE
 
         self.team = team
         self.x = x
@@ -196,6 +197,9 @@ class champion:
         enemy_team = 'red' if self.team == 'blue' else 'blue'
         if self == target:
             enemy_team = self.team  # when ionic sparking themselves
+
+        if target is None:
+            return
 
         if not ('trap_claw' in target.items and not item_damage and not burn_damage):  # trap_claw
 
@@ -511,6 +515,22 @@ class champion:
         self.health += 200
         self.max_health += 200
 
+    def is_equal(self, other):
+
+        if self.name == other.name and \
+                self.stars == other.stars and \
+                self.AS == other.AS and \
+                self.armor == other.armor and \
+                self.MR == other.MR and \
+                self.range == other.range and \
+                self.mana == other.mana and \
+                self.maxmana == other.maxmana and \
+                self.cost == other.cost and \
+                self.items == other.items:
+            # print('returned True')
+            return True
+        return False
+
 
 global blue
 global red
@@ -537,6 +557,14 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 red.append(champion_q(player_2.board[x][y].name, 'red', 7 - y, 6 - x, player_2.board[x][y].stars,
                                       player_2.board[x][y].items, False, None, player_2.board[x][y].chosen,
                                       player_2.board[x][y].kayn_form, player_2.board[x][y].target_dummy))
+
+    printt('Player 1 (Blue) Team')
+    for unit in blue:
+        printt(unit.name)
+
+    printt('Player 2 (Red) Team')
+    for unit in red:
+        printt(unit.name)
 
     if len(blue) == 0 or len(red) == 0:
         if len(red) == 0 and len(blue) == 0:
@@ -585,12 +613,11 @@ def run(champion_q, player_1, player_2, round_damage=0):
         if MILLIS() > 0 and MILLIS() % \
                 origin_class_stats.threshold['hunter'][origin_class.get_origin_class_tier('red', 'hunter')] == 0:
             origin_class.hunter(red)  # hunter -trait
-        for b in blue:
-            if not b.target_dummy:
-                field.action(b)
 
-        for o in red:
-            if not o.target_dummy:
+        for b, o in itertools.zip_longest(blue, red):
+            if b and not b.target_dummy:
+                field.action(b)
+            if o and not o.target_dummy:
                 field.action(o)
 
         while len(que) > 0 and MILLIS() > que[0][2]:
@@ -654,14 +681,14 @@ def run(champion_q, player_1, player_2, round_damage=0):
                 printt('BLUE TEAM WON')
                 for unit in blue:
                     printt(unit.name)
-                printt("round damage = {}".format(round_damage + DAMAGE_PER_UNIT[len(blue)]))
+                printt("player_1 dealt round damage = {}".format(round_damage + DAMAGE_PER_UNIT[len(blue)]))
                 survive_combat(player_1, blue)
                 return 1, (round_damage + DAMAGE_PER_UNIT[len(blue)])
             elif len(blue) == 0:
                 printt('RED TEAM WON')
                 for unit in red:
                     printt(unit.name)
-                printt("round damage = {}".format(round_damage + DAMAGE_PER_UNIT[len(red)]))
+                printt("player_2 dealt round damage = {}".format(round_damage + DAMAGE_PER_UNIT[len(red)]))
                 survive_combat(player_2, red)
                 return 2, (round_damage + DAMAGE_PER_UNIT[len(red)])
             break
